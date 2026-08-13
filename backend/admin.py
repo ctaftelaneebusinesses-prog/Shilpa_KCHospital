@@ -1,6 +1,6 @@
 import re
 from concurrent.futures import ThreadPoolExecutor
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from flask import Blueprint, jsonify, request
 
@@ -174,6 +174,101 @@ def calendar_summary():
             bucket["noShow"] += 1
 
     return jsonify({"month": month, "summary": summary}), 200
+
+
+@admin_bp.get("/analytics")
+@require_admin
+def analytics():
+    expire_stale_holds()
+
+    try:
+        days = int(request.args.get("days", 30))
+    except ValueError:
+        return jsonify({"error": "days must be an integer."}), 400
+    days = max(1, min(days, 90))
+
+    supabase = get_supabase()
+    today = date.today()
+    current_start = today - timedelta(days=days - 1)
+    previous_start = current_start - timedelta(days=days)
+    previous_end = current_start - timedelta(days=1)
+
+    # One query per table across the full (previous + current) window,
+    # fetched concurrently, then split into the two periods in Python -
+    # cheaper than four separate round-trips.
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        appt_future = pool.submit(
+            lambda: supabase.table("appointments")
+            .select("appointment_date, status")
+            .is_("deleted_at", "null")
+            .gte("appointment_date", previous_start.isoformat())
+            .lte("appointment_date", today.isoformat())
+            .execute()
+            .data
+        )
+        pay_future = pool.submit(
+            lambda: supabase.table("payments")
+            .select("amount, updated_at")
+            .eq("status", "successful")
+            .gte("updated_at", f"{previous_start.isoformat()}T00:00:00")
+            .execute()
+            .data
+        )
+        appt_rows = appt_future.result()
+        pay_rows = pay_future.result()
+
+    series_map = {}
+    d = current_start
+    while d <= today:
+        key = d.isoformat()
+        series_map[key] = {"date": key, "appointments": 0, "revenue": 0.0}
+        d += timedelta(days=1)
+
+    previous_start_key = previous_start.isoformat()
+    previous_end_key = previous_end.isoformat()
+
+    current_appt_total = 0
+    previous_appt_total = 0
+    for row in appt_rows:
+        # A hold that never turned into a real booking (cancelled/hold-expired)
+        # shouldn't count toward booking-activity trend or its total.
+        if row["status"] not in ("payment_pending", "confirmed", "completed"):
+            continue
+        day_key = row["appointment_date"]
+        if day_key in series_map:
+            series_map[day_key]["appointments"] += 1
+            current_appt_total += 1
+        elif previous_start_key <= day_key <= previous_end_key:
+            previous_appt_total += 1
+
+    current_revenue_total = 0.0
+    previous_revenue_total = 0.0
+    for row in pay_rows:
+        day_key = row["updated_at"][:10]
+        amount = float(row["amount"])
+        if day_key in series_map:
+            series_map[day_key]["revenue"] += amount
+            current_revenue_total += amount
+        elif previous_start_key <= day_key <= previous_end_key:
+            previous_revenue_total += amount
+
+    series = [series_map[key] for key in sorted(series_map)]
+
+    return (
+        jsonify(
+            {
+                "days": days,
+                "series": series,
+                "totals": {
+                    "appointments": current_appt_total,
+                    "revenue": current_revenue_total,
+                    "previousAppointments": previous_appt_total,
+                    "previousRevenue": previous_revenue_total,
+                },
+            }
+        ),
+        200,
+    )
 
 
 @admin_bp.get("/appointments/by-date/<date_str>")

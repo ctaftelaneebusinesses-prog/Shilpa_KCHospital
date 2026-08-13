@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAdminDashboard } from "../api";
+import AnalyticsSection from "./Analytics";
 import { formatINR } from "./format";
 import {
   IconAlertTriangle,
@@ -86,6 +87,8 @@ export default function Dashboard() {
           </div>
         </>
       )}
+
+      <AnalyticsSection />
 
       <div className="admin-card admin-schedule-card">
         <h3>View a Date</h3>

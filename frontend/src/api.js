@@ -66,6 +66,10 @@ export async function getAdminDashboard() {
   return adminRequest("/admin/dashboard");
 }
 
+export async function getAdminAnalytics(days) {
+  return adminRequest(`/admin/analytics?days=${encodeURIComponent(days)}`);
+}
+
 export async function getAdminNotifications() {
   return adminRequest("/admin/notifications");
 }
