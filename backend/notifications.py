@@ -1,0 +1,142 @@
+import logging
+import smtplib
+from email.mime.text import MIMEText
+from xml.sax.saxutils import escape
+
+from flask import current_app
+from twilio.base.exceptions import TwilioRestException
+from twilio.rest import Client as TwilioClient
+
+from slots import slot_label
+
+logger = logging.getLogger(__name__)
+
+
+def _to_e164(phone: str) -> str:
+    phone = (phone or "").strip()
+    if phone.startswith("+"):
+        return phone
+    if len(phone) == 10:
+        return f"+91{phone}"
+    return phone
+
+
+def _twilio_client():
+    sid = current_app.config["TWILIO_ACCOUNT_SID"]
+    token = current_app.config["TWILIO_AUTH_TOKEN"]
+    if not sid or not token:
+        logger.warning("Twilio not configured; skipping message.")
+        return None
+    return TwilioClient(sid, token)
+
+
+def send_email(to_email: str, subject: str, body: str) -> None:
+    host = current_app.config["SMTP_HOST"]
+    user = current_app.config["SMTP_USER"]
+    password = current_app.config["SMTP_PASSWORD"]
+    from_addr = current_app.config["SMTP_FROM"] or user
+    port = current_app.config["SMTP_PORT"]
+
+    if not to_email:
+        return
+    if not (host and user and password):
+        logger.warning("SMTP not configured; skipping email to %s", to_email)
+        return
+
+    message = MIMEText(body)
+    message["Subject"] = subject
+    message["From"] = from_addr
+    message["To"] = to_email
+
+    try:
+        with smtplib.SMTP(host, port, timeout=10) as server:
+            server.starttls()
+            server.login(user, password)
+            server.sendmail(from_addr, [to_email], message.as_string())
+    except Exception:
+        logger.exception("Failed to send email to %s", to_email)
+
+
+def send_sms(to_phone: str, body: str) -> None:
+    if not to_phone:
+        return
+    from_number = current_app.config["TWILIO_SMS_NUMBER"]
+    client = _twilio_client()
+    if not client or not from_number:
+        return
+    try:
+        client.messages.create(to=_to_e164(to_phone), from_=from_number, body=body)
+    except TwilioRestException:
+        logger.exception("Failed to send SMS to %s", to_phone)
+
+
+def send_whatsapp(to_phone: str, body: str) -> None:
+    if not to_phone:
+        return
+    from_number = current_app.config["TWILIO_WHATSAPP_NUMBER"]
+    client = _twilio_client()
+    if not client or not from_number:
+        return
+    try:
+        client.messages.create(
+            to=f"whatsapp:{_to_e164(to_phone)}", from_=f"whatsapp:{from_number}", body=body
+        )
+    except TwilioRestException:
+        logger.exception("Failed to send WhatsApp message to %s", to_phone)
+
+
+def make_call(to_phone: str, spoken_message: str) -> None:
+    if not to_phone:
+        return
+    from_number = current_app.config["TWILIO_VOICE_NUMBER"] or current_app.config["TWILIO_SMS_NUMBER"]
+    client = _twilio_client()
+    if not client or not from_number:
+        return
+    twiml = f"<Response><Say>{escape(spoken_message)}</Say></Response>"
+    try:
+        client.calls.create(to=_to_e164(to_phone), from_=from_number, twiml=twiml)
+    except TwilioRestException:
+        logger.exception("Failed to place confirmation call to %s", to_phone)
+
+
+def notify_payment_success(appointment: dict, payment: dict) -> None:
+    """Fires clinic (WhatsApp + Email + SMS) and patient (Email + WhatsApp +
+    SMS + call) notifications for a just-confirmed, paid appointment. Each
+    channel fails independently and only logs, so one broken integration
+    never blocks the others or the payment response itself."""
+    patient_name = appointment["patient_name"]
+    patient_phone = appointment["patient_phone"]
+    patient_email = appointment.get("patient_email")
+    appointment_date = appointment["appointment_date"]
+    appointment_time = slot_label(appointment["appointment_time"][:5])
+    amount = payment.get("amount") if payment else current_app.config["CONSULTATION_FEE_INR"]
+
+    clinic_phone = current_app.config["CLINIC_NOTIFY_PHONE"]
+    clinic_email = current_app.config["CLINIC_NOTIFY_EMAIL"]
+
+    clinic_message = (
+        f"New paid appointment - Dr. Shilpa (KC Hospital, Kuppam)\n"
+        f"Patient: {patient_name}\n"
+        f"Phone: {patient_phone}\n"
+        f"Date: {appointment_date} at {appointment_time}\n"
+        f"Amount paid: Rs. {amount}"
+    )
+    patient_message = (
+        f"Hi {patient_name}, your appointment with Dr. Shilpa (KC Hospital, Kuppam) is "
+        f"confirmed for {appointment_date} at {appointment_time}. Payment of Rs. {amount} "
+        f"received. See you soon!"
+    )
+
+    send_whatsapp(clinic_phone, clinic_message)
+    send_email(clinic_email, "New paid appointment - Dr. Shilpa", clinic_message)
+    send_sms(clinic_phone, clinic_message)
+
+    send_email(patient_email, "Your appointment is confirmed - Dr. Shilpa", patient_message)
+    send_whatsapp(patient_phone, patient_message)
+    send_sms(patient_phone, patient_message)
+    if current_app.config["PATIENT_CONFIRMATION_CALL"]:
+        make_call(
+            patient_phone,
+            f"Hello {patient_name}. This is a confirmation call from Doctor Shilpa's clinic. "
+            f"Your appointment is confirmed for {appointment_date} at {appointment_time}. Thank you.",
+        )

@@ -1,0 +1,1 @@
+export const EMERGENCY_NUMBER = import.meta.env.VITE_EMERGENCY_NUMBER || "918090905900";
