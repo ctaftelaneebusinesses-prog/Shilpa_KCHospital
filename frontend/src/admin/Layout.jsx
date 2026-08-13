@@ -1,5 +1,6 @@
 import { Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAdminAuth } from "./AdminAuthContext";
+import logo from "../assets/logo.png";
 import {
   IconAppointments,
   IconCalendar,
@@ -53,7 +54,7 @@ export default function Layout() {
     <div className="admin-shell">
       <aside className="admin-sidebar">
         <div className="admin-sidebar-brand">
-          <div className="admin-brand-mark">KC</div>
+          <img src={logo} alt="KC Hospital Women's Care Logo" className="admin-brand-logo" />
           <div>
             <strong>KC Hospital</strong>
             <span>Admin Console</span>

@@ -19,6 +19,10 @@ const css = `
 
   font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background: var(--rose-bg); min-height: 100vh; color: var(--text);
+  /* This app is light-only (no dark palette exists anywhere in here) -
+     without this, some mobile browsers' "dark mode for websites" inverts
+     the whole page to a charcoal/inverted look. */
+  color-scheme: light;
 }
 .admin-app * { box-sizing: border-box; }
 .admin-app h2 { font-size: 21px; font-weight: 800; letter-spacing: -.01em; margin-bottom: 18px; }
@@ -31,11 +35,7 @@ const css = `
   display: flex; flex-direction: column; padding: 22px 16px; position: sticky; top: 0; height: 100vh;
 }
 .admin-sidebar-brand { display: flex; align-items: center; gap: 12px; padding: 4px 8px 26px; }
-.admin-brand-mark {
-  width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
-  background: linear-gradient(135deg, var(--brand), var(--brand-dark)); color: #fff;
-  display: grid; place-items: center; font-weight: 800; font-size: 13px; letter-spacing: .3px;
-}
+.admin-brand-logo { width: 40px; height: 40px; object-fit: contain; display: block; flex-shrink: 0; }
 .admin-sidebar-brand strong { display: block; font-size: 14.5px; color: var(--text); }
 .admin-sidebar-brand span { font-size: 11px; color: var(--text-muted); }
 
@@ -88,7 +88,11 @@ const css = `
   letter-spacing: .06em; color: var(--text-muted); border-bottom: 1px solid var(--border);
 }
 .admin-notif-empty { padding: 22px 16px; font-size: 13px; color: var(--text-muted); text-align: center; }
-.admin-notif-list { overflow-y: auto; }
+/* min-height: 0 overrides a flex child's default min-height: auto, which
+   otherwise refuses to shrink below its content's natural height - without
+   it, overflow-y: auto never actually kicks in and the panel just grows
+   past its own max-height instead of scrolling internally. */
+.admin-notif-list { overflow-y: auto; min-height: 0; }
 .admin-notif-item {
   display: flex; flex-direction: column; gap: 2px; width: 100%; text-align: left;
   padding: 11px 16px; border: none; border-bottom: 1px solid var(--border); background: none;
@@ -363,7 +367,7 @@ const css = `
      for shrink room. */
   .admin-sidebar { padding: 10px 12px; gap: 8px; }
   .admin-sidebar-brand { flex-shrink: 0; gap: 0; }
-  .admin-sidebar-brand > div:not(.admin-brand-mark) { display: none; }
+  .admin-sidebar-brand > div { display: none; }
   .admin-sidenav { flex: 1; min-width: 0; gap: 2px; }
   .admin-sidenav-link { padding: 8px 10px; }
   .admin-sidenav-logout { flex-shrink: 0; padding: 8px 10px; }
