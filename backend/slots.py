@@ -2,6 +2,16 @@ from datetime import datetime, timedelta, timezone
 
 from supabase_client import get_supabase
 
+# The clinic is in Kuppam, India - always IST, no DST. The server (Railway)
+# runs in UTC, so date.today() drifts a calendar day behind IST for the
+# 5.5 hours after midnight IST (UTC is still "yesterday" then). Every
+# "today"/"past date" comparison must use this instead of date.today().
+IST = timezone(timedelta(hours=5, minutes=30))
+
+
+def today_ist():
+    return datetime.now(IST).date()
+
 # Historical slot labels, kept only so old appointments (booked before the
 # switch to date-only, capacity-based booking) still display a readable
 # time. New bookings no longer carry a time at all.

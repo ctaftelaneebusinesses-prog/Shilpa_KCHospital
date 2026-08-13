@@ -6,12 +6,11 @@ from flask import Blueprint, current_app, jsonify, request
 
 from auth import require_admin
 from settings import get_consultation_fee, set_consultation_fee
-from slots import CAPACITY_STATUSES, DAILY_CAPACITY, appointment_time_label, expire_stale_holds
+from slots import CAPACITY_STATUSES, DAILY_CAPACITY, appointment_time_label, expire_stale_holds, today_ist
 from supabase_client import get_supabase
 
 admin_bp = Blueprint("admin", __name__)
 
-RESOLVED_STATUSES = ["confirmed", "completed", "cancelled", "no_show"]
 ALLOWED_STATUS_TRANSITIONS = {"completed", "cancelled", "no_show"}
 # Only appointments that are done and dusted can be archived - never an
 # upcoming paid booking (confirmed) or an in-progress hold (payment_pending),
@@ -53,7 +52,7 @@ def dashboard():
     expire_stale_holds()
 
     supabase = get_supabase()
-    today = date.today().isoformat()
+    today = today_ist().isoformat()
 
     # Each of these is its own network round-trip to Supabase. Run them
     # concurrently instead of one-at-a-time - sequentially this page was
@@ -65,7 +64,7 @@ def dashboard():
             "cancelled": pool.submit(_count, supabase, statuses=["cancelled"]),
             "no_show": pool.submit(_count, supabase, statuses=["no_show"]),
             "pending": pool.submit(_count, supabase, statuses=["payment_pending"]),
-            "today_appointments": pool.submit(_count, supabase, statuses=RESOLVED_STATUSES, appointment_date=today),
+            "today_appointments": pool.submit(_count, supabase, statuses=CAPACITY_STATUSES, appointment_date=today),
             "upcoming_appointments": pool.submit(_count, supabase, statuses=["confirmed"], date_gte=today),
             "payments_successful": pool.submit(_payments_count, supabase, "successful"),
             "payments_pending": pool.submit(_payments_count, supabase, "pending"),
@@ -188,7 +187,7 @@ def analytics():
     days = max(1, min(days, 90))
 
     supabase = get_supabase()
-    today = date.today()
+    today = today_ist()
     current_start = today - timedelta(days=days - 1)
     previous_start = current_start - timedelta(days=days)
     previous_end = current_start - timedelta(days=1)

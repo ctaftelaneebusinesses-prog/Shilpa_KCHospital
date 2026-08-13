@@ -5,7 +5,14 @@ from flask import Blueprint, current_app, jsonify, request
 
 from notifications import notify_free_booking
 from settings import get_consultation_fee
-from slots import DAILY_CAPACITY, appointment_time_label, expire_stale_holds, get_daily_status, hold_expiry_timestamp
+from slots import (
+    DAILY_CAPACITY,
+    appointment_time_label,
+    expire_stale_holds,
+    get_daily_status,
+    hold_expiry_timestamp,
+    today_ist,
+)
 from supabase_client import get_supabase
 
 booking_bp = Blueprint("booking", __name__)
@@ -30,7 +37,7 @@ def availability():
     except ValueError:
         return jsonify({"error": "A valid date (YYYY-MM-DD) is required."}), 400
 
-    if requested < date.today():
+    if requested < today_ist():
         return jsonify({"error": "Cannot check availability for a past date."}), 400
 
     return jsonify(get_daily_status(date_str)), 200
@@ -78,7 +85,7 @@ def hold_slot():
         requested = date.fromisoformat(date_str)
     except ValueError:
         return jsonify({"error": "A valid date (YYYY-MM-DD) is required."}), 400
-    if requested < date.today():
+    if requested < today_ist():
         return jsonify({"error": "Cannot book an appointment in the past."}), 400
 
     expire_stale_holds()
