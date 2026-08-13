@@ -62,6 +62,11 @@ export default function Appointment() {
     return (event) => setForm((prev) => ({ ...prev, [field]: event.target.value }));
   }
 
+  function updatePhone(event) {
+    const digitsOnly = event.target.value.replace(/\D/g, "").slice(0, 10);
+    setForm((prev) => ({ ...prev, phone: digitsOnly }));
+  }
+
   function handleVoiceClick() {
     startListening((transcript) => {
       setForm((prev) => ({
@@ -294,10 +299,12 @@ export default function Appointment() {
                   <label>{t("phoneLabel")}</label>
                   <input
                     type="tel"
+                    inputMode="numeric"
                     placeholder="10-digit mobile number"
                     pattern="[0-9]{10}"
+                    maxLength={10}
                     value={form.phone}
-                    onChange={updateField("phone")}
+                    onChange={updatePhone}
                     required
                   />
                 </div>
