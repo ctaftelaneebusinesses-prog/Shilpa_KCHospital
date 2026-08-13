@@ -1,10 +1,19 @@
 import { Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAdminAuth } from "./AdminAuthContext";
-import { IconAppointments, IconDashboard, IconChevronRight, IconLogout, IconPayments, IconSettings } from "./icons";
+import {
+  IconAppointments,
+  IconCalendar,
+  IconDashboard,
+  IconChevronRight,
+  IconLogout,
+  IconPayments,
+  IconSettings,
+} from "./icons";
 import NotificationBell from "./NotificationBell";
 
 const NAV_ITEMS = [
   { to: "/admin", end: true, label: "Dashboard", icon: IconDashboard, crumb: "Dashboard" },
+  { to: "/admin/calendar", label: "Calendar", icon: IconCalendar, crumb: "Calendar" },
   { to: "/admin/appointments", label: "Appointments", icon: IconAppointments, crumb: "Appointments" },
   { to: "/admin/payments", label: "Payments", icon: IconPayments, crumb: "Payments" },
   { to: "/admin/settings", label: "Settings", icon: IconSettings, crumb: "Settings" },
@@ -13,7 +22,7 @@ const NAV_ITEMS = [
 function breadcrumbFor(pathname) {
   if (pathname.startsWith("/admin/dates/")) {
     const date = pathname.split("/admin/dates/")[1];
-    return ["Admin", "Dashboard", date];
+    return ["Admin", "Calendar", date];
   }
   const match = NAV_ITEMS.find((item) => (item.end ? pathname === item.to : pathname.startsWith(item.to)));
   return ["Admin", match ? match.crumb : "Dashboard"];

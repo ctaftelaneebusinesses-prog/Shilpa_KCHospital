@@ -1,3 +1,4 @@
+import re
 from datetime import date
 
 from flask import Blueprint, jsonify, request
@@ -122,6 +123,42 @@ def list_appointments():
 
     result = query.order("appointment_date", desc=True).order("appointment_time").execute()
     return jsonify({"appointments": result.data}), 200
+
+
+@admin_bp.get("/calendar-summary")
+@require_admin
+def calendar_summary():
+    expire_stale_holds()
+
+    month = request.args.get("month", "")
+    if not re.match(r"^\d{4}-\d{2}$", month):
+        return jsonify({"error": "A valid month (YYYY-MM) is required."}), 400
+
+    year, mon = (int(part) for part in month.split("-"))
+    start = date(year, mon, 1)
+    end = date(year + 1, 1, 1) if mon == 12 else date(year, mon + 1, 1)
+
+    supabase = get_supabase()
+    rows = (
+        supabase.table("appointments")
+        .select("appointment_date, status")
+        .gte("appointment_date", start.isoformat())
+        .lt("appointment_date", end.isoformat())
+        .execute()
+        .data
+    )
+
+    summary = {}
+    for row in rows:
+        bucket = summary.setdefault(row["appointment_date"], {"active": 0, "cancelled": 0, "noShow": 0})
+        if row["status"] in ("payment_pending", "confirmed", "completed"):
+            bucket["active"] += 1
+        elif row["status"] == "cancelled":
+            bucket["cancelled"] += 1
+        elif row["status"] == "no_show":
+            bucket["noShow"] += 1
+
+    return jsonify({"month": month, "summary": summary}), 200
 
 
 @admin_bp.get("/appointments/by-date/<date_str>")

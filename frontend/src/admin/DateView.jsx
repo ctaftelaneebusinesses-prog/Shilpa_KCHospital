@@ -5,7 +5,7 @@ import {
   getAdminAppointmentsByDate,
   updateAdminAppointmentStatus,
 } from "../api";
-import { formatDateTime, formatINR } from "./format";
+import { formatDate, formatDateTime, formatINR } from "./format";
 
 export default function DateView() {
   const { date } = useParams();
@@ -49,7 +49,7 @@ export default function DateView() {
 
   return (
     <>
-      <h2>Slots for {date}</h2>
+      <h2>Slots for {formatDate(date)}</h2>
       {error && <p className="admin-error">{error}</p>}
 
       <div className="admin-card">
@@ -62,7 +62,9 @@ export default function DateView() {
             >
               {slot.label}
               <div style={{ fontWeight: 400, fontSize: 11, marginTop: 4 }}>
-                {slot.status === "booked" ? "Booked" : "Available"}
+                {slot.status === "booked"
+                  ? slot.appointment?.patient_name || "Booked"
+                  : "Available"}
               </div>
             </div>
           ))}

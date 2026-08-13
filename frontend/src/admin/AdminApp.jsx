@@ -4,6 +4,7 @@ import { injectAdminStyles } from "./adminStyles";
 import Login from "./Login";
 import Layout from "./Layout";
 import Dashboard from "./Dashboard";
+import Calendar from "./Calendar";
 import DateView from "./DateView";
 import AppointmentsList from "./AppointmentsList";
 import PaymentsHistory from "./PaymentsHistory";
@@ -19,6 +20,7 @@ export default function AdminApp() {
           <Route path="login" element={<Login />} />
           <Route element={<Layout />}>
             <Route index element={<Dashboard />} />
+            <Route path="calendar" element={<Calendar />} />
             <Route path="appointments" element={<AppointmentsList />} />
             <Route path="dates/:date" element={<DateView />} />
             <Route path="payments" element={<PaymentsHistory />} />

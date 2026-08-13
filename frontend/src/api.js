@@ -79,6 +79,10 @@ export async function getAdminAppointmentsByDate(date) {
   return adminRequest(`/admin/appointments/by-date/${date}`);
 }
 
+export async function getAdminCalendarSummary(month) {
+  return adminRequest(`/admin/calendar-summary?month=${encodeURIComponent(month)}`);
+}
+
 export async function getAdminAppointmentDetail(id) {
   return adminRequest(`/admin/appointments/${id}`);
 }
