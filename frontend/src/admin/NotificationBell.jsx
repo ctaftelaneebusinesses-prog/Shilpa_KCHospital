@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAdminNotifications } from "../api";
-import { IconBell } from "./icons";
+import { IconBell, IconXCircle } from "./icons";
 
 const LAST_SEEN_KEY = "admin_notifications_last_seen";
 const POLL_MS = 30000;
@@ -75,19 +75,35 @@ export default function NotificationBell() {
       </button>
 
       {open && (
-        <div className="admin-notif-panel">
-          <div className="admin-notif-panel-header">Recent bookings</div>
-          {items.length === 0 && <div className="admin-notif-empty">No confirmed bookings yet.</div>}
-          <div className="admin-notif-list">
-            {items.map((item) => (
-              <button key={item.id} className="admin-notif-item" onClick={() => goToAppointment(item)}>
-                <span className="admin-notif-item-title">{item.patient_name}</span>
-                <span className="admin-notif-item-meta">{item.appointment_date}</span>
-                <span className="admin-notif-item-time">{timeAgo(item.updated_at)}</span>
+        <>
+          {/* Dim + tap-to-dismiss backdrop - on phone the panel takes up
+              most of the screen, so without this it just looks like it's
+              crudely covering the dashboard rather than a deliberate overlay. */}
+          <div className="admin-notif-backdrop" onClick={() => setOpen(false)} />
+          <div className="admin-notif-panel">
+            <div className="admin-notif-panel-header">
+              Recent bookings
+              <button
+                type="button"
+                className="admin-notif-close"
+                aria-label="Close notifications"
+                onClick={() => setOpen(false)}
+              >
+                <IconXCircle size={16} />
               </button>
-            ))}
+            </div>
+            {items.length === 0 && <div className="admin-notif-empty">No confirmed bookings yet.</div>}
+            <div className="admin-notif-list">
+              {items.map((item) => (
+                <button key={item.id} className="admin-notif-item" onClick={() => goToAppointment(item)}>
+                  <span className="admin-notif-item-title">{item.patient_name || "Unnamed patient"}</span>
+                  <span className="admin-notif-item-meta">{item.appointment_date}</span>
+                  <span className="admin-notif-item-time">{timeAgo(item.updated_at)}</span>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

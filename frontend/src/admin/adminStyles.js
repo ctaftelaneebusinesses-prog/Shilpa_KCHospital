@@ -77,6 +77,11 @@ const css = `
   background: #e0556b; border: 1.5px solid var(--surface);
 }
 .admin-notif { position: relative; }
+/* Hidden by default (desktop's dropdown is small and self-explanatory);
+   shown only on phone, where the panel takes up most of the screen and
+   needs a clear "this is a temporary overlay" cue plus a tap-to-dismiss
+   target bigger than the panel itself. */
+.admin-notif-backdrop { display: none; }
 .admin-notif-panel {
   position: absolute; top: calc(100% + 10px); right: 0; width: 320px; max-height: 380px;
   background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
@@ -84,9 +89,15 @@ const css = `
   display: flex; flex-direction: column;
 }
 .admin-notif-panel-header {
+  display: flex; align-items: center; justify-content: space-between;
   padding: 13px 16px; font-size: 12.5px; font-weight: 700; text-transform: uppercase;
   letter-spacing: .06em; color: var(--text-muted); border-bottom: 1px solid var(--border);
 }
+.admin-notif-close {
+  border: none; background: none; cursor: pointer; color: var(--text-faint); padding: 2px;
+  display: grid; place-items: center; border-radius: 6px; transition: color .15s, background .15s;
+}
+.admin-notif-close:hover { color: var(--brand); background: var(--rose-bg); }
 .admin-notif-empty { padding: 22px 16px; font-size: 13px; color: var(--text-muted); text-align: center; }
 /* min-height: 0 overrides a flex child's default min-height: auto, which
    otherwise refuses to shrink below its content's natural height - without
@@ -349,7 +360,8 @@ const css = `
 
   /* A 320px-wide dropdown positioned off a header icon can overflow a
      360px-wide phone screen - clamp it to the viewport instead. */
-  .admin-notif-panel { width: calc(100vw - 32px); max-width: 320px; right: -12px; }
+  .admin-notif-panel { width: calc(100vw - 32px); max-width: 320px; right: -12px; max-height: 60vh; }
+  .admin-notif-backdrop { display: block; position: fixed; inset: 0; background: rgba(20, 12, 18, .35); z-index: 19; }
 
   .admin-header-actions { gap: 10px; }
   .admin-avatar { width: 34px; height: 34px; font-size: 13px; }
