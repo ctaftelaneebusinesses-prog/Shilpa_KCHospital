@@ -10,14 +10,19 @@ export default function PaymentsHistory() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const params = {};
-    if (filters.date) params.date = filters.date;
-    if (filters.status) params.status = filters.status;
-    if (filters.q) params.q = filters.q;
+    // Debounced so typing in the search box doesn't fire a full query per
+    // keystroke - only once typing pauses.
+    const timer = setTimeout(() => {
+      const params = {};
+      if (filters.date) params.date = filters.date;
+      if (filters.status) params.status = filters.status;
+      if (filters.q) params.q = filters.q;
 
-    getAdminPayments(params)
-      .then((data) => setPayments(data.payments))
-      .catch((err) => setError(err.message || "Failed to load payments."));
+      getAdminPayments(params)
+        .then((data) => setPayments(data.payments))
+        .catch((err) => setError(err.message || "Failed to load payments."));
+    }, 350);
+    return () => clearTimeout(timer);
   }, [filters]);
 
   return (

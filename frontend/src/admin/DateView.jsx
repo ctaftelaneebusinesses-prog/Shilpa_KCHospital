@@ -1,11 +1,16 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
+  deleteAdminAppointment,
   getAdminAppointmentDetail,
   getAdminAppointmentsByDate,
   updateAdminAppointmentStatus,
 } from "../api";
 import { formatDate, formatDateTime, formatINR } from "./format";
+
+// Matches the backend's DELETABLE_STATUSES (admin.py) - only a resolved
+// appointment can be archived, never an upcoming/paid or in-progress one.
+const DELETABLE_STATUSES = new Set(["completed", "cancelled", "no_show"]);
 
 export default function DateView() {
   const { date } = useParams();
@@ -44,6 +49,23 @@ export default function DateView() {
       loadSlots();
     } catch (err) {
       setActionError(err.message || "Failed to update appointment.");
+    }
+  }
+
+  async function handleDelete() {
+    if (!detail) return;
+    const confirmed = window.confirm(
+      `Delete this appointment for ${detail.patient_name}? It will be archived out of the lists, but its payment/revenue record is kept.`
+    );
+    if (!confirmed) return;
+
+    setActionError("");
+    try {
+      await deleteAdminAppointment(detail.id);
+      setDetail(null);
+      loadSlots();
+    } catch (err) {
+      setActionError(err.message || "Failed to delete appointment.");
     }
   }
 
@@ -132,6 +154,14 @@ export default function DateView() {
               </button>
               <button className="admin-btn admin-btn-danger" onClick={() => updateStatus("cancelled")}>
                 Cancel Appointment
+              </button>
+            </div>
+          )}
+
+          {DELETABLE_STATUSES.has(detail.status) && (
+            <div className="admin-toolbar" style={{ marginTop: 18 }}>
+              <button className="admin-btn admin-btn-danger" onClick={handleDelete}>
+                Delete Appointment
               </button>
             </div>
           )}

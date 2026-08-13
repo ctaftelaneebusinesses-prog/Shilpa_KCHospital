@@ -94,6 +94,10 @@ export async function updateAdminAppointmentStatus(id, status) {
   });
 }
 
+export async function deleteAdminAppointment(id) {
+  return adminRequest(`/admin/appointments/${id}`, { method: "DELETE" });
+}
+
 export async function getAdminPayments(params = {}) {
   const query = new URLSearchParams(params).toString();
   return adminRequest(`/admin/payments${query ? `?${query}` : ""}`);

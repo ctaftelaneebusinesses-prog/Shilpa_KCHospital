@@ -1,5 +1,6 @@
 import re
-from datetime import date
+from concurrent.futures import ThreadPoolExecutor
+from datetime import date, datetime, timezone
 
 from flask import Blueprint, jsonify, request
 
@@ -12,10 +13,17 @@ admin_bp = Blueprint("admin", __name__)
 
 RESOLVED_STATUSES = ["confirmed", "completed", "cancelled", "no_show"]
 ALLOWED_STATUS_TRANSITIONS = {"completed", "cancelled", "no_show"}
+# Only appointments that are done and dusted can be archived - never an
+# upcoming paid booking (confirmed) or an in-progress hold (payment_pending),
+# so a misclick can't wipe a live appointment out of the lists.
+DELETABLE_STATUSES = {"completed", "cancelled", "no_show"}
 
 
 def _count(supabase, statuses=None, appointment_date=None, date_gte=None):
-    query = supabase.table("appointments").select("id", count="exact")
+    # Archived (soft-deleted) rows are excluded from every count so a
+    # deleted appointment disappears from the dashboard the same way it
+    # disappears from the lists.
+    query = supabase.table("appointments").select("id", count="exact").is_("deleted_at", "null")
     if statuses:
         query = query.in_("status", statuses)
     if appointment_date:
@@ -25,55 +33,61 @@ def _count(supabase, statuses=None, appointment_date=None, date_gte=None):
     return query.execute().count or 0
 
 
+def _payments_count(supabase, status):
+    return supabase.table("payments").select("id", count="exact").eq("status", status).execute().count or 0
+
+
+def _total_revenue(supabase):
+    rows = supabase.table("payments").select("amount").eq("status", "successful").execute().data
+    return sum(float(row["amount"]) for row in rows)
+
+
 @admin_bp.get("/dashboard")
 @require_admin
 def dashboard():
     # Expired holds are otherwise only swept when a patient hits the public
     # booking endpoints, so without this the dashboard's pending counts can
     # sit stale (showing holds as "pending" well after they've expired) if
-    # nobody has booked recently.
+    # nobody has booked recently. This has to finish before the counts below
+    # start, since it can change which bucket a row falls into.
     expire_stale_holds()
 
     supabase = get_supabase()
     today = date.today().isoformat()
 
-    confirmed = _count(supabase, statuses=["confirmed"])
-    completed = _count(supabase, statuses=["completed"])
-    cancelled = _count(supabase, statuses=["cancelled"])
-    no_show = _count(supabase, statuses=["no_show"])
-    pending = _count(supabase, statuses=["payment_pending"])
-
-    today_appointments = _count(supabase, statuses=RESOLVED_STATUSES, appointment_date=today)
-    upcoming_appointments = _count(supabase, statuses=["confirmed"], date_gte=today)
-
-    payments_successful = (
-        supabase.table("payments").select("id", count="exact").eq("status", "successful").execute().count
-        or 0
-    )
-    payments_pending = (
-        supabase.table("payments").select("id", count="exact").eq("status", "pending").execute().count
-        or 0
-    )
-    payments_failed = (
-        supabase.table("payments").select("id", count="exact").eq("status", "failed").execute().count or 0
-    )
-    revenue_rows = supabase.table("payments").select("amount").eq("status", "successful").execute().data
-    total_revenue = sum(float(row["amount"]) for row in revenue_rows)
+    # Each of these is its own network round-trip to Supabase. Run them
+    # concurrently instead of one-at-a-time - sequentially this page was
+    # paying for ~11 round-trips of latency stacked back to back.
+    with ThreadPoolExecutor(max_workers=11) as pool:
+        futures = {
+            "confirmed": pool.submit(_count, supabase, statuses=["confirmed"]),
+            "completed": pool.submit(_count, supabase, statuses=["completed"]),
+            "cancelled": pool.submit(_count, supabase, statuses=["cancelled"]),
+            "no_show": pool.submit(_count, supabase, statuses=["no_show"]),
+            "pending": pool.submit(_count, supabase, statuses=["payment_pending"]),
+            "today_appointments": pool.submit(_count, supabase, statuses=RESOLVED_STATUSES, appointment_date=today),
+            "upcoming_appointments": pool.submit(_count, supabase, statuses=["confirmed"], date_gte=today),
+            "payments_successful": pool.submit(_payments_count, supabase, "successful"),
+            "payments_pending": pool.submit(_payments_count, supabase, "pending"),
+            "payments_failed": pool.submit(_payments_count, supabase, "failed"),
+            "total_revenue": pool.submit(_total_revenue, supabase),
+        }
+        r = {key: future.result() for key, future in futures.items()}
 
     return (
         jsonify(
             {
-                "totalAppointments": confirmed + completed + cancelled + no_show,
-                "todayAppointments": today_appointments,
-                "upcomingAppointments": upcoming_appointments,
-                "completedAppointments": completed,
-                "cancelledAppointments": cancelled,
-                "noShowAppointments": no_show,
-                "pendingAppointments": pending,
-                "successfulPayments": payments_successful,
-                "pendingPayments": payments_pending,
-                "failedPayments": payments_failed,
-                "totalRevenue": total_revenue,
+                "totalAppointments": r["confirmed"] + r["completed"] + r["cancelled"] + r["no_show"],
+                "todayAppointments": r["today_appointments"],
+                "upcomingAppointments": r["upcoming_appointments"],
+                "completedAppointments": r["completed"],
+                "cancelledAppointments": r["cancelled"],
+                "noShowAppointments": r["no_show"],
+                "pendingAppointments": r["pending"],
+                "successfulPayments": r["payments_successful"],
+                "pendingPayments": r["payments_pending"],
+                "failedPayments": r["payments_failed"],
+                "totalRevenue": r["total_revenue"],
             }
         ),
         200,
@@ -107,7 +121,7 @@ def list_appointments():
     expire_stale_holds()
 
     supabase = get_supabase()
-    query = supabase.table("appointments").select("*")
+    query = supabase.table("appointments").select("*").is_("deleted_at", "null")
 
     status = request.args.get("status")
     if status:
@@ -142,6 +156,7 @@ def calendar_summary():
     rows = (
         supabase.table("appointments")
         .select("appointment_date, status")
+        .is_("deleted_at", "null")
         .gte("appointment_date", start.isoformat())
         .lt("appointment_date", end.isoformat())
         .execute()
@@ -170,6 +185,7 @@ def appointments_by_date(date_str):
     booked = (
         supabase.table("appointments")
         .select("*")
+        .is_("deleted_at", "null")
         .eq("appointment_date", date_str)
         .in_("status", ["payment_pending", "confirmed", "completed", "no_show"])
         .execute()
@@ -232,6 +248,7 @@ def update_appointment_status(appointment_id):
         .update(update_fields)
         .eq("id", appointment_id)
         .eq("status", "confirmed")
+        .is_("deleted_at", "null")
         .execute()
     )
     if not result.data:
@@ -241,6 +258,30 @@ def update_appointment_status(appointment_id):
         )
 
     return jsonify(result.data[0]), 200
+
+
+@admin_bp.delete("/appointments/<appointment_id>")
+@require_admin
+def delete_appointment(appointment_id):
+    """Archives (soft-deletes) a resolved appointment - it disappears from
+    the normal lists/counts, but the row and its payment history stay in the
+    database untouched, so revenue reporting is never affected."""
+    supabase = get_supabase()
+    result = (
+        supabase.table("appointments")
+        .update({"deleted_at": datetime.now(timezone.utc).isoformat()})
+        .eq("id", appointment_id)
+        .in_("status", list(DELETABLE_STATUSES))
+        .is_("deleted_at", "null")
+        .execute()
+    )
+    if not result.data:
+        return (
+            jsonify({"error": "Only a completed, cancelled, or no-show appointment can be deleted."}),
+            409,
+        )
+
+    return jsonify({"status": "deleted"}), 200
 
 
 @admin_bp.get("/payments")

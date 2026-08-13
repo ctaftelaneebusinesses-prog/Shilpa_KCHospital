@@ -1,8 +1,16 @@
 import { useEffect, useState } from "react";
-import { getAdminAppointmentDetail, getAdminAppointments, updateAdminAppointmentStatus } from "../api";
+import {
+  deleteAdminAppointment,
+  getAdminAppointmentDetail,
+  getAdminAppointments,
+  updateAdminAppointmentStatus,
+} from "../api";
 import { formatDate, formatINR, formatTime } from "./format";
 
 const STATUSES = ["payment_pending", "confirmed", "completed", "cancelled", "no_show"];
+// Matches the backend's DELETABLE_STATUSES (admin.py) - only a resolved
+// appointment can be archived, never an upcoming/paid or in-progress one.
+const DELETABLE_STATUSES = new Set(["completed", "cancelled", "no_show"]);
 
 export default function AppointmentsList() {
   const [appointments, setAppointments] = useState([]);
@@ -22,7 +30,13 @@ export default function AppointmentsList() {
       .catch((err) => setError(err.message || "Failed to load appointments."));
   }
 
-  useEffect(load, [filters]);
+  useEffect(() => {
+    // Debounced so typing in the search box doesn't fire a full query per
+    // keystroke - only once typing pauses.
+    const timer = setTimeout(load, 350);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters]);
 
   function openDetail(id) {
     setActionError("");
@@ -41,6 +55,23 @@ export default function AppointmentsList() {
       load();
     } catch (err) {
       setActionError(err.message || "Failed to update appointment.");
+    }
+  }
+
+  async function handleDelete() {
+    if (!detail) return;
+    const confirmed = window.confirm(
+      `Delete this appointment for ${detail.patient_name}? It will be archived out of the lists, but its payment/revenue record is kept.`
+    );
+    if (!confirmed) return;
+
+    setActionError("");
+    try {
+      await deleteAdminAppointment(detail.id);
+      setDetail(null);
+      load();
+    } catch (err) {
+      setActionError(err.message || "Failed to delete appointment.");
     }
   }
 
@@ -163,6 +194,14 @@ export default function AppointmentsList() {
               </button>
               <button className="admin-btn admin-btn-danger" onClick={() => updateStatus("cancelled")}>
                 Cancel Appointment
+              </button>
+            </div>
+          )}
+
+          {DELETABLE_STATUSES.has(detail.status) && (
+            <div className="admin-toolbar" style={{ marginTop: 18 }}>
+              <button className="admin-btn admin-btn-danger" onClick={handleDelete}>
+                Delete Appointment
               </button>
             </div>
           )}
