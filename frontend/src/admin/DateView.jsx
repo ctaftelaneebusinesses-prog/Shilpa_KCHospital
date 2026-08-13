@@ -92,6 +92,7 @@ export default function DateView() {
             <table className="admin-table">
               <thead>
                 <tr>
+                  <th>#</th>
                   <th>Patient</th>
                   <th>Phone</th>
                   <th>Status</th>
@@ -99,8 +100,9 @@ export default function DateView() {
                 </tr>
               </thead>
               <tbody>
-                {appointments.map((appointment) => (
+                {appointments.map((appointment, index) => (
                   <tr key={appointment.id} onClick={() => openAppointment(appointment.id)}>
+                    <td>{index + 1}</td>
                     <td>{appointment.patient_name}</td>
                     <td>{appointment.patient_phone}</td>
                     <td>
@@ -172,6 +174,14 @@ export default function DateView() {
               </button>
               <button className="admin-btn admin-btn-danger" onClick={() => updateStatus("cancelled")}>
                 Cancel Appointment
+              </button>
+            </div>
+          )}
+
+          {detail.status === "no_show" && (
+            <div className="admin-toolbar" style={{ marginTop: 18 }}>
+              <button className="admin-btn admin-btn-primary" onClick={() => updateStatus("completed")}>
+                Mark Completed
               </button>
             </div>
           )}

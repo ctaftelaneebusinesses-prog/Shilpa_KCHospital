@@ -113,6 +113,7 @@ export default function AppointmentsList() {
           <table className="admin-table">
             <thead>
               <tr>
+                <th>#</th>
                 <th>Patient</th>
                 <th>Phone</th>
                 <th>Date</th>
@@ -121,8 +122,9 @@ export default function AppointmentsList() {
               </tr>
             </thead>
             <tbody>
-              {appointments.map((appointment) => (
+              {appointments.map((appointment, index) => (
                 <tr key={appointment.id} onClick={() => openDetail(appointment.id)}>
+                  <td>{index + 1}</td>
                   <td>{appointment.patient_name}</td>
                   <td>{appointment.patient_phone}</td>
                   <td>{formatDate(appointment.appointment_date)}</td>
@@ -198,6 +200,14 @@ export default function AppointmentsList() {
               </button>
               <button className="admin-btn admin-btn-danger" onClick={() => updateStatus("cancelled")}>
                 Cancel Appointment
+              </button>
+            </div>
+          )}
+
+          {detail.status === "no_show" && (
+            <div className="admin-toolbar" style={{ marginTop: 18 }}>
+              <button className="admin-btn admin-btn-primary" onClick={() => updateStatus("completed")}>
+                Mark Completed
               </button>
             </div>
           )}

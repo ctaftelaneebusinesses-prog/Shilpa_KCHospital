@@ -76,7 +76,10 @@ def dashboard():
     return (
         jsonify(
             {
-                "totalAppointments": r["confirmed"] + r["completed"] + r["cancelled"] + r["no_show"],
+                # Every non-deleted appointment regardless of status, so this
+                # always matches the row count on the unfiltered Appointments
+                # list page - a pending-payment hold is still an appointment.
+                "totalAppointments": r["confirmed"] + r["completed"] + r["cancelled"] + r["no_show"] + r["pending"],
                 "todayAppointments": r["today_appointments"],
                 "upcomingAppointments": r["upcoming_appointments"],
                 "completedAppointments": r["completed"],
@@ -341,20 +344,24 @@ def update_appointment_status(appointment_id):
     if new_status == "cancelled":
         update_fields["cancelled_reason"] = "cancelled_by_admin"
 
-    # Only a confirmed (paid) appointment can transition, so an admin action
-    # can never mark an unpaid hold as completed/no-show, and can never
-    # re-confirm something already resolved.
+    # Normally only a confirmed (paid) appointment can transition, so an
+    # admin action can never mark an unpaid hold as completed/no-show, and
+    # can never re-confirm something already resolved. The one exception: a
+    # no-show can be corrected to completed (patient called and came in
+    # after all, or it was marked by mistake).
+    from_statuses = ["confirmed", "no_show"] if new_status == "completed" else ["confirmed"]
+
     result = (
         supabase.table("appointments")
         .update(update_fields)
         .eq("id", appointment_id)
-        .eq("status", "confirmed")
+        .in_("status", from_statuses)
         .is_("deleted_at", "null")
         .execute()
     )
     if not result.data:
         return (
-            jsonify({"error": "Only a confirmed appointment can be updated, and only once."}),
+            jsonify({"error": "This status change isn't allowed for the appointment's current state."}),
             409,
         )
 

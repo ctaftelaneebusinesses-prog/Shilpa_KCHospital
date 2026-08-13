@@ -17,11 +17,11 @@ import {
 
 const todayISO = () => new Date().toISOString().split("T")[0];
 
-// completedAppointments + cancelledAppointments + noShowAppointments +
-// pendingAppointments's confirmed sibling should reconcile with
-// totalAppointments (see backend admin.py dashboard()); no_show has its own
-// tile precisely so that math checks out instead of a category silently
-// vanishing from the total.
+// totalAppointments = completedAppointments + cancelledAppointments +
+// noShowAppointments + pendingAppointments + confirmed (confirmed has no
+// tile of its own here - "Upcoming" is only the future-dated subset of it).
+// Kept in sync with backend admin.py dashboard() so this always matches the
+// row count on the unfiltered Appointments list page.
 const APPOINTMENT_TILES = [
   { key: "totalAppointments", label: "Total Appointments", icon: IconCalendar, tint: "tint-blue" },
   { key: "todayAppointments", label: "Today's Appointments", icon: IconClock, tint: "tint-purple" },

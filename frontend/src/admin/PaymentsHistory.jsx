@@ -63,6 +63,7 @@ export default function PaymentsHistory() {
           <table className="admin-table">
             <thead>
               <tr>
+                <th>#</th>
                 <th>Patient</th>
                 <th>Appointment</th>
                 <th>Amount</th>
@@ -72,8 +73,9 @@ export default function PaymentsHistory() {
               </tr>
             </thead>
             <tbody>
-              {payments.map((payment) => (
+              {payments.map((payment, index) => (
                 <tr key={payment.id}>
+                  <td>{index + 1}</td>
                   <td>{payment.appointments?.patient_name}</td>
                   <td>{formatDate(payment.appointments?.appointment_date)}</td>
                   <td>{formatINR(payment.amount)}</td>
