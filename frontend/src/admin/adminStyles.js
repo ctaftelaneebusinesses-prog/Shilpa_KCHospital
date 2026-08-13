@@ -200,6 +200,15 @@ const css = `
 .admin-field { margin-bottom: 14px; }
 .admin-field label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 6px; }
 .admin-field input { width: 100%; }
+.admin-password-field { position: relative; }
+.admin-password-field input { padding-right: 40px; }
+.admin-password-toggle {
+  position: absolute; top: 50%; right: 4px; transform: translateY(-50%);
+  width: 32px; height: 32px; border: none; background: none; cursor: pointer;
+  display: grid; place-items: center; color: var(--text-muted); border-radius: 8px;
+  transition: color .15s, background .15s;
+}
+.admin-password-toggle:hover { color: var(--brand); background: var(--brand-tint-05); }
 .admin-error { color: #c0392b; font-size: 12px; margin-bottom: 12px; }
 .admin-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; font-size: 13px; }
 .admin-detail-grid dt { color: var(--text-muted); font-size: 11px; text-transform: uppercase; margin-bottom: 2px; }
