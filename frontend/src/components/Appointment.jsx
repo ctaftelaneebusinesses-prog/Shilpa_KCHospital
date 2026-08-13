@@ -3,6 +3,7 @@ import { useLanguage } from "../LanguageContext";
 import { useVoiceInput } from "../hooks/useVoiceInput";
 import {
   createPaymentOrder,
+  getAppointment,
   getAvailability,
   holdSlot,
   verifyPayment,
@@ -141,12 +142,21 @@ export default function Appointment() {
         language,
       });
 
-      setHold({
-        appointmentId: data.appointmentId,
-        holdExpiresAt: data.holdExpiresAt,
-        consultationFee: data.consultationFee,
-      });
-      setStep("payment");
+      if (data.status === "confirmed") {
+        // Consultation fee is 0 - the backend confirms instantly, no payment needed.
+        const appointment = await getAppointment(data.appointmentId);
+        setConfirmation(appointment);
+        setStep("confirmed");
+        setModalOpen(true);
+        setForm(initialForm);
+      } else {
+        setHold({
+          appointmentId: data.appointmentId,
+          holdExpiresAt: data.holdExpiresAt,
+          consultationFee: data.consultationFee,
+        });
+        setStep("payment");
+      }
     } catch (err) {
       setError(err.message || t("errorServer"));
       if (form.date) {

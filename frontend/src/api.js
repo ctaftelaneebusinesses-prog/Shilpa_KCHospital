@@ -90,3 +90,14 @@ export async function getAdminPayments(params = {}) {
   const query = new URLSearchParams(params).toString();
   return adminRequest(`/admin/payments${query ? `?${query}` : ""}`);
 }
+
+export async function getAdminSettings() {
+  return adminRequest("/admin/settings");
+}
+
+export async function updateAdminSettings(consultationFeeInr) {
+  return adminRequest("/admin/settings", {
+    method: "POST",
+    body: JSON.stringify({ consultationFeeInr }),
+  });
+}

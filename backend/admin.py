@@ -3,6 +3,7 @@ from datetime import date
 from flask import Blueprint, jsonify, request
 
 from auth import require_admin
+from settings import get_consultation_fee, set_consultation_fee
 from slots import get_availability, slot_label
 from supabase_client import get_supabase
 
@@ -223,3 +224,28 @@ def payment_history():
 
     result = query.order("created_at", desc=True).execute()
     return jsonify({"payments": result.data}), 200
+
+
+@admin_bp.get("/settings")
+@require_admin
+def get_settings():
+    return jsonify({"consultationFeeInr": get_consultation_fee()}), 200
+
+
+@admin_bp.post("/settings")
+@require_admin
+def update_settings():
+    payload = request.get_json(silent=True) or {}
+    if "consultationFeeInr" not in payload:
+        return jsonify({"error": "consultationFeeInr is required."}), 400
+
+    try:
+        fee = float(payload["consultationFeeInr"])
+    except (TypeError, ValueError):
+        return jsonify({"error": "consultationFeeInr must be a number."}), 400
+
+    if fee < 0:
+        return jsonify({"error": "consultationFeeInr cannot be negative."}), 400
+
+    updated = set_consultation_fee(round(fee, 2))
+    return jsonify({"consultationFeeInr": updated}), 200

@@ -8,6 +8,7 @@ from twilio.base.exceptions import TwilioRestException
 from twilio.rest import Client as TwilioClient
 
 from slots import slot_label
+from settings import get_consultation_fee
 
 logger = logging.getLogger(__name__)
 
@@ -109,7 +110,7 @@ def notify_payment_success(appointment: dict, payment: dict) -> None:
     patient_email = appointment.get("patient_email")
     appointment_date = appointment["appointment_date"]
     appointment_time = slot_label(appointment["appointment_time"][:5])
-    amount = payment.get("amount") if payment else current_app.config["CONSULTATION_FEE_INR"]
+    amount = payment.get("amount") if payment else get_consultation_fee()
 
     clinic_phone = current_app.config["CLINIC_NOTIFY_PHONE"]
     clinic_email = current_app.config["CLINIC_NOTIFY_EMAIL"]
@@ -129,6 +130,46 @@ def notify_payment_success(appointment: dict, payment: dict) -> None:
 
     send_whatsapp(clinic_phone, clinic_message)
     send_email(clinic_email, "New paid appointment - Dr. Shilpa", clinic_message)
+    send_sms(clinic_phone, clinic_message)
+
+    send_email(patient_email, "Your appointment is confirmed - Dr. Shilpa", patient_message)
+    send_whatsapp(patient_phone, patient_message)
+    send_sms(patient_phone, patient_message)
+    if current_app.config["PATIENT_CONFIRMATION_CALL"]:
+        make_call(
+            patient_phone,
+            f"Hello {patient_name}. This is a confirmation call from Doctor Shilpa's clinic. "
+            f"Your appointment is confirmed for {appointment_date} at {appointment_time}. Thank you.",
+        )
+
+
+def notify_free_booking(appointment: dict) -> None:
+    """Same channels as notify_payment_success, but for a booking that was
+    confirmed immediately because the admin has set the consultation fee to
+    zero (no payment step)."""
+    patient_name = appointment["patient_name"]
+    patient_phone = appointment["patient_phone"]
+    patient_email = appointment.get("patient_email")
+    appointment_date = appointment["appointment_date"]
+    appointment_time = slot_label(appointment["appointment_time"][:5])
+
+    clinic_phone = current_app.config["CLINIC_NOTIFY_PHONE"]
+    clinic_email = current_app.config["CLINIC_NOTIFY_EMAIL"]
+
+    clinic_message = (
+        f"New free appointment - Dr. Shilpa (KC Hospital, Kuppam)\n"
+        f"Patient: {patient_name}\n"
+        f"Phone: {patient_phone}\n"
+        f"Date: {appointment_date} at {appointment_time}"
+    )
+    patient_message = (
+        f"Hi {patient_name}, your appointment with Dr. Shilpa (KC Hospital, Kuppam) is "
+        f"confirmed for {appointment_date} at {appointment_time}. This consultation is free "
+        f"of charge. See you soon!"
+    )
+
+    send_whatsapp(clinic_phone, clinic_message)
+    send_email(clinic_email, "New free appointment - Dr. Shilpa", clinic_message)
     send_sms(clinic_phone, clinic_message)
 
     send_email(patient_email, "Your appointment is confirmed - Dr. Shilpa", patient_message)

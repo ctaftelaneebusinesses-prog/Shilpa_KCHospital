@@ -3,6 +3,8 @@ from datetime import date
 
 from flask import Blueprint, current_app, jsonify, request
 
+from notifications import notify_free_booking
+from settings import get_consultation_fee
 from slots import TIME_SLOTS, expire_stale_holds, get_availability, hold_expiry_timestamp, slot_label
 from supabase_client import get_supabase
 
@@ -68,6 +70,9 @@ def hold_slot():
 
     expire_stale_holds()
 
+    fee = get_consultation_fee()
+    is_free = fee <= 0
+
     supabase = get_supabase()
     try:
         result = (
@@ -81,8 +86,8 @@ def hold_slot():
                     "appointment_time": time_value,
                     "reason": reason,
                     "language": language,
-                    "status": "payment_pending",
-                    "hold_expires_at": hold_expiry_timestamp(),
+                    "status": "confirmed" if is_free else "payment_pending",
+                    "hold_expires_at": None if is_free else hold_expiry_timestamp(),
                 }
             )
             .execute()
@@ -94,13 +99,23 @@ def hold_slot():
         return jsonify({"error": "Could not hold this appointment slot. Please try again."}), 500
 
     appointment = result.data[0]
+
+    if is_free:
+        try:
+            notify_free_booking(appointment)
+        except Exception:  # noqa: BLE001 - notification failures must never break booking
+            current_app.logger.exception(
+                "Failed to send free-booking confirmation notifications for appointment %s",
+                appointment["id"],
+            )
+
     return (
         jsonify(
             {
                 "appointmentId": appointment["id"],
                 "holdExpiresAt": appointment["hold_expires_at"],
                 "status": appointment["status"],
-                "consultationFee": current_app.config["CONSULTATION_FEE_INR"],
+                "consultationFee": fee,
             }
         ),
         201,

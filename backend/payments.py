@@ -5,6 +5,7 @@ import razorpay
 from flask import Blueprint, current_app, jsonify, request
 
 from notifications import notify_payment_success
+from settings import get_consultation_fee
 from supabase_client import get_supabase
 
 payments_bp = Blueprint("payments", __name__)
@@ -95,7 +96,10 @@ def create_order():
         .execute()
     )
 
-    amount_paise = int(round(current_app.config["CONSULTATION_FEE_INR"] * 100))
+    fee = get_consultation_fee()
+    if fee <= 0:
+        return jsonify({"error": "This appointment does not require payment."}), 400
+    amount_paise = int(round(fee * 100))
 
     if existing.data:
         payment = existing.data[0]
@@ -115,7 +119,7 @@ def create_order():
                 {
                     "appointment_id": appointment_id,
                     "razorpay_order_id": order["id"],
-                    "amount": current_app.config["CONSULTATION_FEE_INR"],
+                    "amount": fee,
                     "currency": "INR",
                     "status": "pending",
                 }
