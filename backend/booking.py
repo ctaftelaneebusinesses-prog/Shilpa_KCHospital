@@ -37,6 +37,11 @@ def availability():
     return jsonify({"date": date_str, "slots": get_availability(date_str)}), 200
 
 
+@booking_bp.get("/fee")
+def consultation_fee():
+    return jsonify({"consultationFeeInr": get_consultation_fee()}), 200
+
+
 @booking_bp.post("/hold")
 def hold_slot():
     payload = request.get_json(silent=True) or {}

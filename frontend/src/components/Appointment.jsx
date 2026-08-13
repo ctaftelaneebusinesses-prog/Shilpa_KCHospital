@@ -5,6 +5,7 @@ import {
   createPaymentOrder,
   getAppointment,
   getAvailability,
+  getConsultationFee,
   holdSlot,
   verifyPayment,
 } from "../api";
@@ -52,6 +53,8 @@ export default function Appointment() {
   const [hold, setHold] = useState(null); // { appointmentId, holdExpiresAt, consultationFee }
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [confirmation, setConfirmation] = useState(null);
+  const [isFreeBooking, setIsFreeBooking] = useState(false);
+  const [currentFee, setCurrentFee] = useState(null); // null while unknown, then a number
 
   const { supported: voiceSupported, listening, statusText, startListening } =
     useVoiceInput(language);
@@ -68,6 +71,12 @@ export default function Appointment() {
       }));
     });
   }
+
+  useEffect(() => {
+    getConsultationFee()
+      .then((data) => setCurrentFee(data.consultationFeeInr))
+      .catch(() => setCurrentFee(null));
+  }, []);
 
   useEffect(() => {
     if (!form.date) {
@@ -146,6 +155,7 @@ export default function Appointment() {
         // Consultation fee is 0 - the backend confirms instantly, no payment needed.
         const appointment = await getAppointment(data.appointmentId);
         setConfirmation(appointment);
+        setIsFreeBooking(true);
         setStep("confirmed");
         setModalOpen(true);
         setForm(initialForm);
@@ -198,6 +208,7 @@ export default function Appointment() {
               razorpay_signature: response.razorpay_signature,
             });
             setConfirmation(result.appointment);
+            setIsFreeBooking(false);
             setStep("confirmed");
             setModalOpen(true);
             setForm(initialForm);
@@ -221,6 +232,7 @@ export default function Appointment() {
     setStep("form");
     setHold(null);
     setConfirmation(null);
+    setIsFreeBooking(false);
     setError("");
   }
 
@@ -368,11 +380,19 @@ export default function Appointment() {
                 </span>
               </div>
 
+              {currentFee === 0 && (
+                <p className="body-text" style={{ color: "#2f8a4e", fontWeight: 600 }}>
+                  {t("freeServiceBanner")}
+                </p>
+              )}
+
               {error && <p className="form-error">{error}</p>}
 
               <button type="submit" className="whatsapp-submit" disabled={submitting}>
-                <span className="whatsapp-symbol">💳</span>
-                <span>{submitting ? "..." : t("continueToPayment")}</span>
+                <span className="whatsapp-symbol">{currentFee === 0 ? "✓" : "💳"}</span>
+                <span>
+                  {submitting ? "..." : currentFee === 0 ? t("bookFreeAppointment") : t("continueToPayment")}
+                </span>
                 <span>→</span>
               </button>
 
@@ -416,7 +436,7 @@ export default function Appointment() {
                 <span className="form-icon">✓</span>
                 <div>
                   <h3>{t("confirmedTitle")}</h3>
-                  <p>{t("confirmedSubtitle")}</p>
+                  <p>{isFreeBooking ? t("freeConfirmedSubtitle") : t("confirmedSubtitle")}</p>
                 </div>
               </div>
 
@@ -434,7 +454,7 @@ export default function Appointment() {
         </div>
       </div>
 
-      <SuccessModal open={modalOpen} onClose={() => setModalOpen(false)} />
+      <SuccessModal open={modalOpen} onClose={() => setModalOpen(false)} free={isFreeBooking} />
     </section>
   );
 }

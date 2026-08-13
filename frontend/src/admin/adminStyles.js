@@ -121,7 +121,8 @@ const css = `
 .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
 .stat-tile {
   position: relative; background: var(--surface); border: 1px solid var(--brand-tint-10); border-radius: 12px;
-  padding: 18px 18px 16px; box-shadow: 0 4px 16px rgba(90, 50, 70, .06);
+  padding: 18px 18px 16px; box-shadow: 0 4px 16px rgba(90, 50, 70, .06); min-height: 104px;
+  display: flex; flex-direction: column; justify-content: center;
   transition: transform .15s ease, box-shadow .15s ease;
 }
 .stat-tile:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(90, 50, 70, .10); }
@@ -131,7 +132,6 @@ const css = `
 }
 .stat-tile strong { display: block; font-size: 27px; font-weight: 800; color: var(--text); line-height: 1.15; margin-bottom: 4px; letter-spacing: -.02em; }
 .stat-tile span { display: block; font-size: 12.5px; font-weight: 500; color: var(--text-muted); padding-right: 30px; }
-.stat-pill { display: inline-block; padding: 1px 10px 2px; border-radius: 8px; }
 
 .tint-blue { background: #eaf2fd; color: #3568c4; }
 .tint-purple { background: #f2edfb; color: #7b52d6; }
@@ -141,9 +141,9 @@ const css = `
 .tint-amber { background: #fff5e2; color: #b9791a; }
 .tint-brand { background: var(--brand-tint-10); color: var(--brand); }
 
-.stat-pill-red { background: #fdeceb; color: #c0392b; }
-.stat-pill-amber { background: #fff5e2; color: #92660a; }
-.stat-pill-green { background: #e9f8ef; color: #1f7a4f; }
+.stat-tile strong.tone-red { color: #c0392b; }
+.stat-tile strong.tone-amber { color: #92660a; }
+.stat-tile strong.tone-green { color: #1f7a4f; }
 
 /* ---- Scheduling widget ---- */
 .admin-schedule-card { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; }

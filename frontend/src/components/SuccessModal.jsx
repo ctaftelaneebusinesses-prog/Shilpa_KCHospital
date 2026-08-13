@@ -1,6 +1,6 @@
 import { useLanguage } from "../LanguageContext";
 
-export default function SuccessModal({ open, onClose }) {
+export default function SuccessModal({ open, onClose, free }) {
   const { t } = useLanguage();
 
   return (
@@ -13,7 +13,7 @@ export default function SuccessModal({ open, onClose }) {
       <div className="modal-box">
         <div className="success-icon">✓</div>
         <h3>{t("successTitle")}</h3>
-        <p>{t("successText")}</p>
+        <p>{free ? t("freeSuccessText") : t("successText")}</p>
         <button onClick={onClose}>OK</button>
       </div>
     </div>

@@ -24,9 +24,20 @@ def expire_stale_holds():
     block another patient, without needing a background worker."""
     supabase = get_supabase()
     now_iso = datetime.now(timezone.utc).isoformat()
-    supabase.table("appointments").update(
-        {"status": "cancelled", "cancelled_reason": "hold_expired"}
-    ).eq("status", "payment_pending").lt("hold_expires_at", now_iso).execute()
+    expired = (
+        supabase.table("appointments")
+        .update({"status": "cancelled", "cancelled_reason": "hold_expired"})
+        .eq("status", "payment_pending")
+        .lt("hold_expires_at", now_iso)
+        .execute()
+    )
+    # Keep the payments table in sync so the admin dashboard's "pending
+    # payments" count doesn't drift from actual payment_pending appointments.
+    expired_ids = [row["id"] for row in (expired.data or [])]
+    if expired_ids:
+        supabase.table("payments").update({"status": "failed"}).in_(
+            "appointment_id", expired_ids
+        ).eq("status", "pending").execute()
 
 
 def get_availability(date_str: str):

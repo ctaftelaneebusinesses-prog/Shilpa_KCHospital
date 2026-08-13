@@ -20,23 +20,23 @@ const APPOINTMENT_TILES = [
   { key: "todayAppointments", label: "Today's Appointments", icon: IconClock, tint: "tint-purple" },
   { key: "upcomingAppointments", label: "Upcoming Appointments", icon: IconTrendingUp, tint: "tint-teal" },
   { key: "completedAppointments", label: "Completed", icon: IconCheckCircle, tint: "tint-green" },
-  { key: "cancelledAppointments", label: "Cancelled", icon: IconAlertTriangle, tint: "tint-red", pill: "stat-pill-red" },
-  { key: "pendingAppointments", label: "Pending Payment", icon: IconHourglass, tint: "tint-amber", pill: "stat-pill-amber" },
+  { key: "cancelledAppointments", label: "Cancelled", icon: IconAlertTriangle, tint: "tint-red", tone: "tone-red" },
+  { key: "pendingAppointments", label: "Pending Payment", icon: IconHourglass, tint: "tint-amber", tone: "tone-amber" },
 ];
 
 const PAYMENT_TILES = [
-  { key: "successfulPayments", label: "Successful Payments", icon: IconShieldCheck, tint: "tint-green", pill: "stat-pill-green" },
-  { key: "pendingPayments", label: "Pending Payments", icon: IconHourglass, tint: "tint-amber", pill: "stat-pill-amber" },
-  { key: "failedPayments", label: "Failed Payments", icon: IconXCircle, tint: "tint-red", pill: "stat-pill-red" },
+  { key: "successfulPayments", label: "Successful Payments", icon: IconShieldCheck, tint: "tint-green", tone: "tone-green" },
+  { key: "pendingPayments", label: "Pending Payments", icon: IconHourglass, tint: "tint-amber", tone: "tone-amber" },
+  { key: "failedPayments", label: "Failed Payments", icon: IconXCircle, tint: "tint-red", tone: "tone-red" },
 ];
 
-function StatTile({ label, value, icon: Icon, tint, pill }) {
+function StatTile({ label, value, icon: Icon, tint, tone }) {
   return (
     <div className="stat-tile">
       <div className={`stat-tile-icon ${tint}`}>
         <Icon size={17} />
       </div>
-      <strong>{pill ? <span className={`stat-pill ${pill}`}>{value}</span> : value}</strong>
+      <strong className={tone}>{value}</strong>
       <span>{label}</span>
     </div>
   );
