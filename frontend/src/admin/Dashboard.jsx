@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAdminDashboard } from "../api";
+import { formatINR } from "./format";
 import {
   IconAlertTriangle,
   IconCalendar,
@@ -15,12 +16,18 @@ import {
 
 const todayISO = () => new Date().toISOString().split("T")[0];
 
+// completedAppointments + cancelledAppointments + noShowAppointments +
+// pendingAppointments's confirmed sibling should reconcile with
+// totalAppointments (see backend admin.py dashboard()); no_show has its own
+// tile precisely so that math checks out instead of a category silently
+// vanishing from the total.
 const APPOINTMENT_TILES = [
   { key: "totalAppointments", label: "Total Appointments", icon: IconCalendar, tint: "tint-blue" },
   { key: "todayAppointments", label: "Today's Appointments", icon: IconClock, tint: "tint-purple" },
   { key: "upcomingAppointments", label: "Upcoming Appointments", icon: IconTrendingUp, tint: "tint-teal" },
   { key: "completedAppointments", label: "Completed", icon: IconCheckCircle, tint: "tint-green" },
   { key: "cancelledAppointments", label: "Cancelled", icon: IconAlertTriangle, tint: "tint-red", tone: "tone-red" },
+  { key: "noShowAppointments", label: "No-Show", icon: IconXCircle, tint: "tint-amber", tone: "tone-amber" },
   { key: "pendingAppointments", label: "Pending Payment", icon: IconHourglass, tint: "tint-amber", tone: "tone-amber" },
 ];
 
@@ -31,12 +38,14 @@ const PAYMENT_TILES = [
 ];
 
 function StatTile({ label, value, icon: Icon, tint, tone }) {
+  // Zero/unset should render as 0, never a blank tile or "undefined".
+  const display = value ?? 0;
   return (
     <div className="stat-tile">
       <div className={`stat-tile-icon ${tint}`}>
         <Icon size={17} />
       </div>
-      <strong className={tone}>{value}</strong>
+      <strong className={tone}>{display}</strong>
       <span>{label}</span>
     </div>
   );
@@ -68,12 +77,12 @@ export default function Dashboard() {
             ))}
           </div>
 
-          <div className="admin-section-title">Payments &amp; Revenue</div>
+          <div className="admin-section-title">Payments &amp; Revenue (All Time)</div>
           <div className="stat-grid" style={{ marginBottom: 24 }}>
             {PAYMENT_TILES.map((tile) => (
               <StatTile key={tile.key} {...tile} value={stats[tile.key]} />
             ))}
-            <StatTile label="Total Revenue" value={`₹${stats.totalRevenue}`} icon={IconWallet} tint="tint-brand" />
+            <StatTile label="Total Revenue" value={formatINR(stats.totalRevenue)} icon={IconWallet} tint="tint-brand" />
           </div>
         </>
       )}

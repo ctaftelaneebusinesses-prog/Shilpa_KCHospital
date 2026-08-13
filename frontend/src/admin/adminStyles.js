@@ -130,8 +130,8 @@ const css = `
   position: absolute; top: 14px; right: 14px; width: 34px; height: 34px; border-radius: 9px;
   display: grid; place-items: center;
 }
-.stat-tile strong { display: block; font-size: 27px; font-weight: 800; color: var(--text); line-height: 1.15; margin-bottom: 4px; letter-spacing: -.02em; }
-.stat-tile span { display: block; font-size: 12.5px; font-weight: 500; color: var(--text-muted); padding-right: 30px; }
+.stat-tile strong { display: block; font-size: 27px; font-weight: 800; color: var(--text); line-height: 1.15; margin-bottom: 4px; letter-spacing: -.02em; overflow-wrap: anywhere; }
+.stat-tile span { display: block; font-size: 12.5px; font-weight: 500; color: var(--text-muted); padding-right: 30px; overflow-wrap: anywhere; }
 
 .tint-blue { background: #eaf2fd; color: #3568c4; }
 .tint-purple { background: #f2edfb; color: #7b52d6; }
@@ -179,8 +179,10 @@ const css = `
 
 .status-badge { display: inline-block; padding: 3px 10px; border-radius: 100px; font-size: 11px; font-weight: 700; }
 .status-payment_pending { background: #fff4dd; color: #92660a; }
-.status-confirmed { background: #e4f4ec; color: #1f7a4f; }
-.status-completed { background: #e6eefc; color: #2255a4; }
+/* Confirmed = scheduled but not yet resolved -> info blue, matching Upcoming's tint.
+   Completed = a successful terminal state -> green, matching a successful payment. */
+.status-confirmed { background: #e6eefc; color: #2255a4; }
+.status-completed { background: #e4f4ec; color: #1f7a4f; }
 .status-cancelled { background: #fbe6e6; color: #a83232; }
 .status-no_show { background: #ececec; color: #555; }
 .status-pending { background: #fff4dd; color: #92660a; }
@@ -230,6 +232,7 @@ const css = `
 }
 @media (max-width: 560px) {
   .stat-grid { grid-template-columns: 1fr; }
+  .stat-tile strong { font-size: 22px; }
 }
 `;
 

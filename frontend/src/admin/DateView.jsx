@@ -5,6 +5,7 @@ import {
   getAdminAppointmentsByDate,
   updateAdminAppointmentStatus,
 } from "../api";
+import { formatINR } from "./format";
 
 export default function DateView() {
   const { date } = useParams();
@@ -105,7 +106,9 @@ export default function DateView() {
             </div>
             <div>
               <dt>Amount</dt>
-              <dd>{detail.payments?.[0]?.amount ? `₹${detail.payments[0].amount}` : "-"}</dd>
+              <dd>
+                {detail.payments?.[0]?.amount != null ? formatINR(detail.payments[0].amount) : "-"}
+              </dd>
             </div>
             <div>
               <dt>Transaction ID</dt>

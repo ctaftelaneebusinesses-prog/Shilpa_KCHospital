@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getAdminPayments } from "../api";
+import { formatINR } from "./format";
 
 const STATUSES = ["pending", "successful", "failed", "refunded"];
 
@@ -71,7 +72,7 @@ export default function PaymentsHistory() {
                 <td>
                   {payment.appointments?.appointment_date} {payment.appointments?.appointment_time?.slice(0, 5)}
                 </td>
-                <td>₹{payment.amount}</td>
+                <td>{formatINR(payment.amount)}</td>
                 <td>
                   <span className={`status-badge status-${payment.status}`}>{payment.status}</span>
                 </td>

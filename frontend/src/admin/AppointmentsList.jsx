@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getAdminAppointmentDetail, getAdminAppointments, updateAdminAppointmentStatus } from "../api";
+import { formatINR } from "./format";
 
 const STATUSES = ["payment_pending", "confirmed", "completed", "cancelled", "no_show"];
 
@@ -142,7 +143,9 @@ export default function AppointmentsList() {
             </div>
             <div>
               <dt>Amount</dt>
-              <dd>{detail.payments?.[0]?.amount ? `₹${detail.payments[0].amount}` : "-"}</dd>
+              <dd>
+                {detail.payments?.[0]?.amount != null ? formatINR(detail.payments[0].amount) : "-"}
+              </dd>
             </div>
             <div>
               <dt>Transaction ID</dt>

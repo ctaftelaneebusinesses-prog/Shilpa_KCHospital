@@ -4,7 +4,7 @@ from flask import Blueprint, jsonify, request
 
 from auth import require_admin
 from settings import get_consultation_fee, set_consultation_fee
-from slots import get_availability, slot_label
+from slots import expire_stale_holds, get_availability, slot_label
 from supabase_client import get_supabase
 
 admin_bp = Blueprint("admin", __name__)
@@ -27,6 +27,12 @@ def _count(supabase, statuses=None, appointment_date=None, date_gte=None):
 @admin_bp.get("/dashboard")
 @require_admin
 def dashboard():
+    # Expired holds are otherwise only swept when a patient hits the public
+    # booking endpoints, so without this the dashboard's pending counts can
+    # sit stale (showing holds as "pending" well after they've expired) if
+    # nobody has booked recently.
+    expire_stale_holds()
+
     supabase = get_supabase()
     today = date.today().isoformat()
 
@@ -61,6 +67,7 @@ def dashboard():
                 "upcomingAppointments": upcoming_appointments,
                 "completedAppointments": completed,
                 "cancelledAppointments": cancelled,
+                "noShowAppointments": no_show,
                 "pendingAppointments": pending,
                 "successfulPayments": payments_successful,
                 "pendingPayments": payments_pending,
@@ -96,6 +103,8 @@ def notifications():
 @admin_bp.get("/appointments")
 @require_admin
 def list_appointments():
+    expire_stale_holds()
+
     supabase = get_supabase()
     query = supabase.table("appointments").select("*")
 
@@ -154,6 +163,13 @@ def appointment_detail(appointment_id):
 
     appointment = result.data[0]
     appointment["time_label"] = slot_label(appointment["appointment_time"][:5])
+    # An appointment can have more than one payment row (e.g. a failed
+    # verification attempt followed by a successful retry). The embed has no
+    # guaranteed order, so without this the frontend's payments[0] can show
+    # a stale/failed attempt instead of the latest one.
+    appointment["payments"] = sorted(
+        appointment.get("payments") or [], key=lambda p: p["created_at"], reverse=True
+    )
     return jsonify(appointment), 200
 
 
@@ -193,6 +209,8 @@ def update_appointment_status(appointment_id):
 @admin_bp.get("/payments")
 @require_admin
 def payment_history():
+    expire_stale_holds()
+
     supabase = get_supabase()
 
     search = request.args.get("q", "").strip()
