@@ -156,16 +156,17 @@ export default function Settings() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
+                    gap: 10,
                     padding: "9px 12px",
                     borderBottom: "1px solid var(--border)",
                     fontSize: 13.5,
                   }}
                 >
-                  {reason.label}
+                  <span style={{ flex: 1, minWidth: 0, overflowWrap: "break-word" }}>{reason.label}</span>
                   <button
                     type="button"
                     className="admin-btn admin-btn-danger"
-                    style={{ padding: "4px 12px", fontSize: 12 }}
+                    style={{ padding: "4px 12px", fontSize: 12, flexShrink: 0 }}
                     onClick={() => handleDeleteReason(reason.id)}
                   >
                     Remove
@@ -179,16 +180,24 @@ export default function Settings() {
               )}
             </ul>
 
-            <form onSubmit={handleAddReason} style={{ display: "flex", gap: 10, maxWidth: 420 }}>
+            <form
+              onSubmit={handleAddReason}
+              style={{ display: "flex", flexWrap: "wrap", gap: 10, maxWidth: 420 }}
+            >
               <input
                 className="admin-input"
                 type="text"
                 placeholder="e.g. Painful periods"
                 value={newReason}
                 onChange={(event) => setNewReason(event.target.value)}
-                style={{ flex: 1 }}
+                style={{ flex: "1 1 180px" }}
               />
-              <button type="submit" className="admin-btn admin-btn-primary" disabled={addingReason}>
+              <button
+                type="submit"
+                className="admin-btn admin-btn-primary"
+                style={{ flexShrink: 0 }}
+                disabled={addingReason}
+              >
                 {addingReason ? "Adding..." : "Add"}
               </button>
             </form>

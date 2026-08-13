@@ -353,6 +353,20 @@ const css = `
 
   .analytics-card-header { flex-wrap: wrap; }
   .analytics-table-toggle { width: auto; }
+
+  /* The collapsed mobile top bar (brand + all nav icons + logout) was
+     cramming everything into one unwrapped row with nothing protected from
+     squashing - the brand text, 5 icon buttons and logout button together
+     need ~430px and don't fit a ~390px phone. Drop the brand text (the
+     breadcrumb below already orients the admin), and let the nav claim the
+     remaining space and scroll internally instead of everything fighting
+     for shrink room. */
+  .admin-sidebar { padding: 10px 12px; gap: 8px; }
+  .admin-sidebar-brand { flex-shrink: 0; gap: 0; }
+  .admin-sidebar-brand > div:not(.admin-brand-mark) { display: none; }
+  .admin-sidenav { flex: 1; min-width: 0; gap: 2px; }
+  .admin-sidenav-link { padding: 8px 10px; }
+  .admin-sidenav-logout { flex-shrink: 0; padding: 8px 10px; }
 }
 `;
 

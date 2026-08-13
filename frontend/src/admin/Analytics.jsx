@@ -10,9 +10,9 @@ const APPOINTMENTS_COLOR = "#8b3a62"; // this app's own brand color
 const REVENUE_COLOR = "#008300"; // money/growth green
 
 const RANGE_OPTIONS = [
-  { label: "7D", days: 7 },
-  { label: "30D", days: 30 },
-  { label: "90D", days: 90 },
+  { label: "7 Days", days: 7 },
+  { label: "30 Days", days: 30 },
+  { label: "90 Days", days: 90 },
 ];
 
 const CHART_WIDTH = 760;
