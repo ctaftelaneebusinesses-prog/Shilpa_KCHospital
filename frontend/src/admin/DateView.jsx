@@ -5,7 +5,7 @@ import {
   getAdminAppointmentsByDate,
   updateAdminAppointmentStatus,
 } from "../api";
-import { formatINR } from "./format";
+import { formatDateTime, formatINR } from "./format";
 
 export default function DateView() {
   const { date } = useParams();
@@ -116,7 +116,7 @@ export default function DateView() {
             </div>
             <div>
               <dt>Booked On</dt>
-              <dd>{new Date(detail.created_at).toLocaleString()}</dd>
+              <dd>{formatDateTime(detail.created_at)}</dd>
             </div>
           </dl>
 

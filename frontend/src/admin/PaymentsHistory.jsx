@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getAdminPayments } from "../api";
-import { formatINR } from "./format";
+import { formatDate, formatDateTime, formatINR, formatTime } from "./format";
 
 const STATUSES = ["pending", "successful", "failed", "refunded"];
 
@@ -70,14 +70,14 @@ export default function PaymentsHistory() {
               <tr key={payment.id}>
                 <td>{payment.appointments?.patient_name}</td>
                 <td>
-                  {payment.appointments?.appointment_date} {payment.appointments?.appointment_time?.slice(0, 5)}
+                  {formatDate(payment.appointments?.appointment_date)} · {formatTime(payment.appointments?.appointment_time)}
                 </td>
                 <td>{formatINR(payment.amount)}</td>
                 <td>
                   <span className={`status-badge status-${payment.status}`}>{payment.status}</span>
                 </td>
                 <td>{payment.razorpay_payment_id || "-"}</td>
-                <td>{new Date(payment.created_at).toLocaleString()}</td>
+                <td>{formatDateTime(payment.created_at)}</td>
               </tr>
             ))}
           </tbody>

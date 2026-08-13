@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getAdminAppointmentDetail, getAdminAppointments, updateAdminAppointmentStatus } from "../api";
-import { formatINR } from "./format";
+import { formatDate, formatINR, formatTime } from "./format";
 
 const STATUSES = ["payment_pending", "confirmed", "completed", "cancelled", "no_show"];
 
@@ -93,8 +93,8 @@ export default function AppointmentsList() {
               <tr key={appointment.id} onClick={() => openDetail(appointment.id)}>
                 <td>{appointment.patient_name}</td>
                 <td>{appointment.patient_phone}</td>
-                <td>{appointment.appointment_date}</td>
-                <td>{appointment.appointment_time?.slice(0, 5)}</td>
+                <td>{formatDate(appointment.appointment_date)}</td>
+                <td>{formatTime(appointment.appointment_time)}</td>
                 <td>
                   <span className={`status-badge status-${appointment.status}`}>{appointment.status}</span>
                 </td>
@@ -124,7 +124,7 @@ export default function AppointmentsList() {
             <div>
               <dt>Date / Time</dt>
               <dd>
-                {detail.appointment_date} · {detail.time_label}
+                {formatDate(detail.appointment_date)} · {detail.time_label}
               </dd>
             </div>
             <div>
