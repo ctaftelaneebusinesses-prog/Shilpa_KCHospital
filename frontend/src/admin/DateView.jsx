@@ -14,27 +14,32 @@ const DELETABLE_STATUSES = new Set(["completed", "cancelled", "no_show"]);
 
 export default function DateView() {
   const { date } = useParams();
-  const [slots, setSlots] = useState([]);
+  const [appointments, setAppointments] = useState([]);
+  const [capacity, setCapacity] = useState(0);
+  const [bookedCount, setBookedCount] = useState(0);
   const [error, setError] = useState("");
   const [detail, setDetail] = useState(null);
   const [actionError, setActionError] = useState("");
 
-  function loadSlots() {
+  function loadAppointments() {
     getAdminAppointmentsByDate(date)
-      .then((data) => setSlots(data.slots))
-      .catch((err) => setError(err.message || "Failed to load slots."));
+      .then((data) => {
+        setAppointments(data.appointments);
+        setCapacity(data.capacity);
+        setBookedCount(data.bookedCount);
+      })
+      .catch((err) => setError(err.message || "Failed to load appointments."));
   }
 
   useEffect(() => {
-    loadSlots();
+    loadAppointments();
     setDetail(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date]);
 
-  function openSlot(slot) {
-    if (!slot.appointment) return;
+  function openAppointment(id) {
     setActionError("");
-    getAdminAppointmentDetail(slot.appointment.id)
+    getAdminAppointmentDetail(id)
       .then(setDetail)
       .catch((err) => setActionError(err.message || "Failed to load details."));
   }
@@ -46,7 +51,7 @@ export default function DateView() {
       await updateAdminAppointmentStatus(detail.id, status);
       const refreshed = await getAdminAppointmentDetail(detail.id);
       setDetail(refreshed);
-      loadSlots();
+      loadAppointments();
     } catch (err) {
       setActionError(err.message || "Failed to update appointment.");
     }
@@ -63,7 +68,7 @@ export default function DateView() {
     try {
       await deleteAdminAppointment(detail.id);
       setDetail(null);
-      loadSlots();
+      loadAppointments();
     } catch (err) {
       setActionError(err.message || "Failed to delete appointment.");
     }
@@ -71,26 +76,43 @@ export default function DateView() {
 
   return (
     <>
-      <h2>Slots for {formatDate(date)}</h2>
+      <h2>
+        Bookings for {formatDate(date)}{" "}
+        <span className={`status-badge ${bookedCount >= capacity ? "status-cancelled" : "status-confirmed"}`}>
+          {bookedCount}/{capacity}
+        </span>
+      </h2>
       {error && <p className="admin-error">{error}</p>}
 
       <div className="admin-card">
-        <div className="slot-grid">
-          {slots.map((slot) => (
-            <div
-              key={slot.time}
-              className={`slot-pill ${slot.status}`}
-              onClick={() => openSlot(slot)}
-            >
-              {slot.label}
-              <div style={{ fontWeight: 400, fontSize: 11, marginTop: 4 }}>
-                {slot.status === "booked"
-                  ? slot.appointment?.patient_name || "Booked"
-                  : "Available"}
-              </div>
-            </div>
-          ))}
-        </div>
+        {appointments.length === 0 ? (
+          <p className="admin-hint">No bookings for this date yet.</p>
+        ) : (
+          <div className="admin-table-scroll">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Patient</th>
+                  <th>Phone</th>
+                  <th>Status</th>
+                  <th>Booked On</th>
+                </tr>
+              </thead>
+              <tbody>
+                {appointments.map((appointment) => (
+                  <tr key={appointment.id} onClick={() => openAppointment(appointment.id)}>
+                    <td>{appointment.patient_name}</td>
+                    <td>{appointment.patient_phone}</td>
+                    <td>
+                      <span className={`status-badge status-${appointment.status}`}>{appointment.status}</span>
+                    </td>
+                    <td>{formatDateTime(appointment.created_at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {detail && (
@@ -109,10 +131,6 @@ export default function DateView() {
             <div>
               <dt>Email</dt>
               <dd>{detail.patient_email || "-"}</dd>
-            </div>
-            <div>
-              <dt>Time</dt>
-              <dd>{detail.time_label}</dd>
             </div>
             <div>
               <dt>Status</dt>

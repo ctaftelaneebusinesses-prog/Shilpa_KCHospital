@@ -5,19 +5,18 @@ from flask import Blueprint, current_app, jsonify, request
 
 from notifications import notify_free_booking
 from settings import get_consultation_fee
-from slots import TIME_SLOTS, expire_stale_holds, get_availability, hold_expiry_timestamp, slot_label
+from slots import DAILY_CAPACITY, appointment_time_label, expire_stale_holds, get_daily_status, hold_expiry_timestamp
 from supabase_client import get_supabase
 
 booking_bp = Blueprint("booking", __name__)
 
 PHONE_PATTERN = re.compile(r"^[0-9]{10}$")
 DATE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
-SLOT_BOOKED_MESSAGE = "This appointment time has already been booked. Please select another time."
+DATE_FULL_MESSAGE = "This date is already fully booked. Please choose another date."
 
 
-def _is_unique_violation(error: Exception) -> bool:
-    text = str(error)
-    return "23505" in text or "duplicate key" in text.lower()
+def _is_date_full(error: Exception) -> bool:
+    return "DATE_FULL" in str(error)
 
 
 @booking_bp.get("/availability")
@@ -34,7 +33,7 @@ def availability():
     if requested < date.today():
         return jsonify({"error": "Cannot check availability for a past date."}), 400
 
-    return jsonify({"date": date_str, "slots": get_availability(date_str)}), 200
+    return jsonify(get_daily_status(date_str)), 200
 
 
 @booking_bp.get("/fee")
@@ -46,7 +45,7 @@ def consultation_fee():
 def hold_slot():
     payload = request.get_json(silent=True) or {}
 
-    required = ["name", "phone", "date", "time"]
+    required = ["name", "phone", "date"]
     missing = [field for field in required if not str(payload.get(field, "")).strip()]
     if missing:
         return jsonify({"error": f"Missing required fields: {', '.join(missing)}"}), 400
@@ -55,7 +54,6 @@ def hold_slot():
     phone = str(payload["phone"]).strip()
     email = str(payload.get("email", "")).strip() or None
     date_str = str(payload["date"]).strip()
-    time_value = str(payload["time"]).strip()
     reason = str(payload.get("reason", "")).strip() or None
     language = payload.get("language", "en")
 
@@ -63,8 +61,6 @@ def hold_slot():
         return jsonify({"error": "Please enter a valid 10-digit mobile number."}), 400
     if not DATE_PATTERN.match(date_str):
         return jsonify({"error": "A valid date (YYYY-MM-DD) is required."}), 400
-    if not any(slot_value == time_value for slot_value, _ in TIME_SLOTS):
-        return jsonify({"error": "Please select a valid appointment time."}), 400
 
     try:
         requested = date.fromisoformat(date_str)
@@ -77,33 +73,32 @@ def hold_slot():
 
     fee = get_consultation_fee()
     is_free = fee <= 0
+    status = "confirmed" if is_free else "payment_pending"
+    hold_expires_at = None if is_free else hold_expiry_timestamp()
 
     supabase = get_supabase()
     try:
-        result = (
-            supabase.table("appointments")
-            .insert(
-                {
-                    "patient_name": name,
-                    "patient_phone": phone,
-                    "patient_email": email,
-                    "appointment_date": date_str,
-                    "appointment_time": time_value,
-                    "reason": reason,
-                    "language": language,
-                    "status": "confirmed" if is_free else "payment_pending",
-                    "hold_expires_at": None if is_free else hold_expiry_timestamp(),
-                }
-            )
-            .execute()
-        )
+        result = supabase.rpc(
+            "book_appointment",
+            {
+                "p_name": name,
+                "p_phone": phone,
+                "p_email": email,
+                "p_date": date_str,
+                "p_reason": reason,
+                "p_language": language,
+                "p_status": status,
+                "p_hold_expires_at": hold_expires_at,
+                "p_capacity": DAILY_CAPACITY,
+            },
+        ).execute()
     except Exception as error:  # noqa: BLE001 - postgrest raises a generic APIError
-        if _is_unique_violation(error):
-            return jsonify({"error": SLOT_BOOKED_MESSAGE}), 409
+        if _is_date_full(error):
+            return jsonify({"error": DATE_FULL_MESSAGE}), 409
         current_app.logger.exception("Failed to create appointment hold")
-        return jsonify({"error": "Could not hold this appointment slot. Please try again."}), 500
+        return jsonify({"error": "Could not hold this appointment. Please try again."}), 500
 
-    appointment = result.data[0]
+    appointment = result.data
 
     if is_free:
         try:
@@ -143,6 +138,6 @@ def get_appointment(appointment_id):
         return jsonify({"error": "Appointment not found."}), 404
 
     appointment = result.data[0]
-    appointment["time_label"] = slot_label(appointment["appointment_time"][:5])
+    appointment["time_label"] = appointment_time_label(appointment)
     return jsonify(appointment), 200
 

@@ -6,7 +6,7 @@ from flask import Blueprint, jsonify, request
 
 from auth import require_admin
 from settings import get_consultation_fee, set_consultation_fee
-from slots import expire_stale_holds, get_availability, slot_label
+from slots import CAPACITY_STATUSES, DAILY_CAPACITY, appointment_time_label, expire_stale_holds
 from supabase_client import get_supabase
 
 admin_bp = Blueprint("admin", __name__)
@@ -110,7 +110,7 @@ def notifications():
     )
     items = result.data
     for row in items:
-        row["time_label"] = slot_label(row["appointment_time"][:5])
+        row["time_label"] = appointment_time_label(row)
 
     return jsonify({"notifications": items}), 200
 
@@ -135,7 +135,7 @@ def list_appointments():
     if search:
         query = query.or_(f"patient_name.ilike.%{search}%,patient_phone.ilike.%{search}%")
 
-    result = query.order("appointment_date", desc=True).order("appointment_time").execute()
+    result = query.order("appointment_date", desc=True).order("created_at").execute()
     return jsonify({"appointments": result.data}), 200
 
 
@@ -274,25 +274,32 @@ def analytics():
 @admin_bp.get("/appointments/by-date/<date_str>")
 @require_admin
 def appointments_by_date(date_str):
+    expire_stale_holds()
     supabase = get_supabase()
-    slots = get_availability(date_str)
 
-    booked = (
+    appointments = (
         supabase.table("appointments")
         .select("*")
         .is_("deleted_at", "null")
         .eq("appointment_date", date_str)
-        .in_("status", ["payment_pending", "confirmed", "completed", "no_show"])
+        .in_("status", ["payment_pending", "confirmed", "completed", "cancelled", "no_show"])
+        .order("created_at")
         .execute()
         .data
     )
-    booked_by_time = {row["appointment_time"][:5]: row for row in booked}
+    booked_count = sum(1 for row in appointments if row["status"] in CAPACITY_STATUSES)
 
-    for slot in slots:
-        appointment = booked_by_time.get(slot["time"])
-        slot["appointment"] = appointment
-
-    return jsonify({"date": date_str, "slots": slots}), 200
+    return (
+        jsonify(
+            {
+                "date": date_str,
+                "capacity": DAILY_CAPACITY,
+                "bookedCount": booked_count,
+                "appointments": appointments,
+            }
+        ),
+        200,
+    )
 
 
 @admin_bp.get("/appointments/<appointment_id>")
@@ -310,7 +317,7 @@ def appointment_detail(appointment_id):
         return jsonify({"error": "Appointment not found."}), 404
 
     appointment = result.data[0]
-    appointment["time_label"] = slot_label(appointment["appointment_time"][:5])
+    appointment["time_label"] = appointment_time_label(appointment)
     # An appointment can have more than one payment row (e.g. a failed
     # verification attempt followed by a successful retry). The embed has no
     # guaranteed order, so without this the frontend's payments[0] can show

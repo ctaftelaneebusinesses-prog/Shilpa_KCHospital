@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getAdminPayments } from "../api";
-import { formatDate, formatDateTime, formatINR, formatTime } from "./format";
+import { formatDate, formatDateTime, formatINR } from "./format";
 
 const STATUSES = ["pending", "successful", "failed", "refunded"];
 
@@ -59,34 +59,34 @@ export default function PaymentsHistory() {
       </div>
 
       <div className="admin-card">
-        <table className="admin-table">
-          <thead>
-            <tr>
-              <th>Patient</th>
-              <th>Appointment</th>
-              <th>Amount</th>
-              <th>Status</th>
-              <th>Transaction ID</th>
-              <th>Paid On</th>
-            </tr>
-          </thead>
-          <tbody>
-            {payments.map((payment) => (
-              <tr key={payment.id}>
-                <td>{payment.appointments?.patient_name}</td>
-                <td>
-                  {formatDate(payment.appointments?.appointment_date)} · {formatTime(payment.appointments?.appointment_time)}
-                </td>
-                <td>{formatINR(payment.amount)}</td>
-                <td>
-                  <span className={`status-badge status-${payment.status}`}>{payment.status}</span>
-                </td>
-                <td>{payment.razorpay_payment_id || "-"}</td>
-                <td>{formatDateTime(payment.created_at)}</td>
+        <div className="admin-table-scroll">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Patient</th>
+                <th>Appointment</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Transaction ID</th>
+                <th>Paid On</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {payments.map((payment) => (
+                <tr key={payment.id}>
+                  <td>{payment.appointments?.patient_name}</td>
+                  <td>{formatDate(payment.appointments?.appointment_date)}</td>
+                  <td>{formatINR(payment.amount)}</td>
+                  <td>
+                    <span className={`status-badge status-${payment.status}`}>{payment.status}</span>
+                  </td>
+                  <td>{payment.razorpay_payment_id || "-"}</td>
+                  <td>{formatDateTime(payment.created_at)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </>
   );

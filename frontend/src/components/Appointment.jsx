@@ -19,7 +19,6 @@ const initialForm = {
   email: "",
   city: "",
   date: "",
-  time: "",
   message: "",
 };
 
@@ -41,8 +40,8 @@ function loadRazorpayCheckout() {
 export default function Appointment() {
   const { language, t } = useLanguage();
   const [form, setForm] = useState(initialForm);
-  const [slots, setSlots] = useState([]);
-  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [availability, setAvailability] = useState(null); // { capacity, bookedCount, full }
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -80,20 +79,20 @@ export default function Appointment() {
 
   useEffect(() => {
     if (!form.date) {
-      setSlots([]);
+      setAvailability(null);
       return;
     }
     let cancelled = false;
-    setSlotsLoading(true);
+    setAvailabilityLoading(true);
     getAvailability(form.date)
       .then((data) => {
-        if (!cancelled) setSlots(data.slots);
+        if (!cancelled) setAvailability(data);
       })
       .catch(() => {
-        if (!cancelled) setSlots([]);
+        if (!cancelled) setAvailability(null);
       })
       .finally(() => {
-        if (!cancelled) setSlotsLoading(false);
+        if (!cancelled) setAvailabilityLoading(false);
       });
     return () => {
       cancelled = true;
@@ -113,7 +112,7 @@ export default function Appointment() {
         setStep("form");
         setHold(null);
         if (form.date) {
-          getAvailability(form.date).then((data) => setSlots(data.slots));
+          getAvailability(form.date).then(setAvailability);
         }
       }
     };
@@ -126,14 +125,19 @@ export default function Appointment() {
     event.preventDefault();
     setError("");
 
-    const { name, phone, email, city, date, time } = form;
-    if (!name.trim() || !phone.trim() || !city.trim() || !date || !time) {
+    const { name, phone, email, city, date } = form;
+    if (!name.trim() || !phone.trim() || !city.trim() || !date) {
       setError(t("errorRequired"));
       return;
     }
 
     if (!/^[0-9]{10}$/.test(phone.trim())) {
       setError(t("errorPhone"));
+      return;
+    }
+
+    if (availability?.full) {
+      setError(t("dateFullMessage"));
       return;
     }
 
@@ -146,7 +150,6 @@ export default function Appointment() {
         phone: phone.trim(),
         email: email.trim(),
         date,
-        time,
         reason,
         language,
       });
@@ -170,7 +173,7 @@ export default function Appointment() {
     } catch (err) {
       setError(err.message || t("errorServer"));
       if (form.date) {
-        getAvailability(form.date).then((data) => setSlots(data.slots)).catch(() => {});
+        getAvailability(form.date).then(setAvailability).catch(() => {});
       }
     } finally {
       setSubmitting(false);
@@ -321,32 +324,24 @@ export default function Appointment() {
                 />
               </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label>{t("dateLabel")}</label>
-                  <input
-                    type="date"
-                    min={todayISO()}
-                    value={form.date}
-                    onChange={updateField("date")}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>{t("timeLabel")}</label>
-                  <select value={form.time} onChange={updateField("time")} required>
-                    <option value="">
-                      {slotsLoading ? t("checkingAvailability") : t("selectTime")}
-                    </option>
-                    {slots.map((slot) => (
-                      <option key={slot.time} value={slot.time} disabled={slot.status === "booked"}>
-                        {slot.label}
-                        {slot.status === "booked" ? ` (${t("booked")})` : ""}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div className="form-group">
+                <label>{t("dateLabel")}</label>
+                <input
+                  type="date"
+                  min={todayISO()}
+                  value={form.date}
+                  onChange={updateField("date")}
+                  required
+                />
+                {form.date && (
+                  <p className={`date-availability-note${availability?.full ? " full" : ""}`}>
+                    {availabilityLoading
+                      ? t("checkingAvailability")
+                      : availability?.full
+                      ? t("dateFullMessage")
+                      : t("dateAvailableMessage")}
+                  </p>
+                )}
               </div>
 
               <div className="voice-box">
@@ -388,7 +383,7 @@ export default function Appointment() {
 
               {error && <p className="form-error">{error}</p>}
 
-              <button type="submit" className="whatsapp-submit" disabled={submitting}>
+              <button type="submit" className="whatsapp-submit" disabled={submitting || availability?.full}>
                 <span className="whatsapp-symbol">{currentFee === 0 ? "✓" : "💳"}</span>
                 <span>
                   {submitting ? "..." : currentFee === 0 ? t("bookFreeAppointment") : t("continueToPayment")}
@@ -442,8 +437,6 @@ export default function Appointment() {
 
               <p className="body-text">
                 {t("appointmentDateLabel")}: <strong>{confirmation.appointment_date}</strong>
-                <br />
-                {t("timeLabel")}: <strong>{confirmation.appointment_time}</strong>
               </p>
 
               <button type="button" className="whatsapp-submit" onClick={resetToForm}>

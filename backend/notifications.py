@@ -7,7 +7,6 @@ from flask import current_app
 from twilio.base.exceptions import TwilioRestException
 from twilio.rest import Client as TwilioClient
 
-from slots import slot_label
 from settings import get_consultation_fee
 
 logger = logging.getLogger(__name__)
@@ -109,7 +108,6 @@ def notify_payment_success(appointment: dict, payment: dict) -> None:
     patient_phone = appointment["patient_phone"]
     patient_email = appointment.get("patient_email")
     appointment_date = appointment["appointment_date"]
-    appointment_time = slot_label(appointment["appointment_time"][:5])
     amount = payment.get("amount") if payment else get_consultation_fee()
 
     clinic_phone = current_app.config["CLINIC_NOTIFY_PHONE"]
@@ -119,12 +117,12 @@ def notify_payment_success(appointment: dict, payment: dict) -> None:
         f"New paid appointment - Dr. Shilpa (KC Hospital, Kuppam)\n"
         f"Patient: {patient_name}\n"
         f"Phone: {patient_phone}\n"
-        f"Date: {appointment_date} at {appointment_time}\n"
+        f"Date: {appointment_date}\n"
         f"Amount paid: Rs. {amount}"
     )
     patient_message = (
         f"Hi {patient_name}, your appointment with Dr. Shilpa (KC Hospital, Kuppam) is "
-        f"confirmed for {appointment_date} at {appointment_time}. Payment of Rs. {amount} "
+        f"confirmed for {appointment_date}. Payment of Rs. {amount} "
         f"received. See you soon!"
     )
 
@@ -139,7 +137,7 @@ def notify_payment_success(appointment: dict, payment: dict) -> None:
         make_call(
             patient_phone,
             f"Hello {patient_name}. This is a confirmation call from Doctor Shilpa's clinic. "
-            f"Your appointment is confirmed for {appointment_date} at {appointment_time}. Thank you.",
+            f"Your appointment is confirmed for {appointment_date}. Thank you.",
         )
 
 
@@ -151,7 +149,6 @@ def notify_free_booking(appointment: dict) -> None:
     patient_phone = appointment["patient_phone"]
     patient_email = appointment.get("patient_email")
     appointment_date = appointment["appointment_date"]
-    appointment_time = slot_label(appointment["appointment_time"][:5])
 
     clinic_phone = current_app.config["CLINIC_NOTIFY_PHONE"]
     clinic_email = current_app.config["CLINIC_NOTIFY_EMAIL"]
@@ -160,11 +157,11 @@ def notify_free_booking(appointment: dict) -> None:
         f"New free appointment - Dr. Shilpa (KC Hospital, Kuppam)\n"
         f"Patient: {patient_name}\n"
         f"Phone: {patient_phone}\n"
-        f"Date: {appointment_date} at {appointment_time}"
+        f"Date: {appointment_date}"
     )
     patient_message = (
         f"Hi {patient_name}, your appointment with Dr. Shilpa (KC Hospital, Kuppam) is "
-        f"confirmed for {appointment_date} at {appointment_time}. This consultation is free "
+        f"confirmed for {appointment_date}. This consultation is free "
         f"of charge. See you soon!"
     )
 
@@ -179,5 +176,5 @@ def notify_free_booking(appointment: dict) -> None:
         make_call(
             patient_phone,
             f"Hello {patient_name}. This is a confirmation call from Doctor Shilpa's clinic. "
-            f"Your appointment is confirmed for {appointment_date} at {appointment_time}. Thank you.",
+            f"Your appointment is confirmed for {appointment_date}. Thank you.",
         )

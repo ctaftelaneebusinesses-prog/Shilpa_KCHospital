@@ -5,7 +5,7 @@ import {
   getAdminAppointments,
   updateAdminAppointmentStatus,
 } from "../api";
-import { formatDate, formatINR, formatTime } from "./format";
+import { formatDate, formatDateTime, formatINR } from "./format";
 
 const STATUSES = ["payment_pending", "confirmed", "completed", "cancelled", "no_show"];
 // Matches the backend's DELETABLE_STATUSES (admin.py) - only a resolved
@@ -109,30 +109,32 @@ export default function AppointmentsList() {
       </div>
 
       <div className="admin-card">
-        <table className="admin-table">
-          <thead>
-            <tr>
-              <th>Patient</th>
-              <th>Phone</th>
-              <th>Date</th>
-              <th>Time</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {appointments.map((appointment) => (
-              <tr key={appointment.id} onClick={() => openDetail(appointment.id)}>
-                <td>{appointment.patient_name}</td>
-                <td>{appointment.patient_phone}</td>
-                <td>{formatDate(appointment.appointment_date)}</td>
-                <td>{formatTime(appointment.appointment_time)}</td>
-                <td>
-                  <span className={`status-badge status-${appointment.status}`}>{appointment.status}</span>
-                </td>
+        <div className="admin-table-scroll">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Patient</th>
+                <th>Phone</th>
+                <th>Date</th>
+                <th>Booked On</th>
+                <th>Status</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {appointments.map((appointment) => (
+                <tr key={appointment.id} onClick={() => openDetail(appointment.id)}>
+                  <td>{appointment.patient_name}</td>
+                  <td>{appointment.patient_phone}</td>
+                  <td>{formatDate(appointment.appointment_date)}</td>
+                  <td>{formatDateTime(appointment.created_at)}</td>
+                  <td>
+                    <span className={`status-badge status-${appointment.status}`}>{appointment.status}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {detail && (
@@ -153,10 +155,12 @@ export default function AppointmentsList() {
               <dd>{detail.patient_email || "-"}</dd>
             </div>
             <div>
-              <dt>Date / Time</dt>
-              <dd>
-                {formatDate(detail.appointment_date)} · {detail.time_label}
-              </dd>
+              <dt>Date</dt>
+              <dd>{formatDate(detail.appointment_date)}</dd>
+            </div>
+            <div>
+              <dt>Booked On</dt>
+              <dd>{formatDateTime(detail.created_at)}</dd>
             </div>
             <div>
               <dt>Status</dt>

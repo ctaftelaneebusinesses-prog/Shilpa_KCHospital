@@ -219,6 +219,8 @@ button, input, select, textarea { font-family: inherit; }
 .whatsapp-symbol { font-size: 18px; }
 .privacy-text { text-align: center; color: #998c93; font-size: 10px; margin-top: 12px; }
 .form-error { color: #c0392b; font-size: 12px; margin: -8px 0 14px; }
+.date-availability-note { font-size: 12px; font-weight: 600; margin-top: 7px; color: #2f8a4e; }
+.date-availability-note.full { color: #c0392b; }
 .link-btn {
   background: none; border: 0; padding: 0; color: #9f5276; font-size: 11px;
   text-decoration: underline; cursor: pointer;

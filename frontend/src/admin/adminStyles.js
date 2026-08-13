@@ -148,7 +148,8 @@ const css = `
 /* ---- Scheduling widget ---- */
 .admin-schedule-card { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
 .admin-schedule-card h3 { font-size: 15px; font-weight: 700; margin: 0 0 2px; flex-basis: 100%; }
-.admin-schedule-card p.admin-hint { font-size: 12.5px; color: var(--text-muted); margin: 0 0 6px; flex-basis: 100%; }
+.admin-hint { font-size: 12.5px; color: var(--text-muted); margin: 0 0 6px; }
+.admin-schedule-card p.admin-hint { flex-basis: 100%; }
 .admin-field-group { display: flex; flex-direction: column; gap: 6px; }
 .admin-field-group label { font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
 
@@ -172,7 +173,12 @@ const css = `
 .admin-btn-danger { background: #fff5f5; color: #c0392b; border: 1px solid #f2c6c6; }
 
 /* ---- Tables ---- */
+/* On narrow screens a 5-6 column table can't shrink to fit without becoming
+   unreadable, so it scrolls horizontally inside its own card instead of
+   overflowing the page or squeezing every column unreadably thin. */
+.admin-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .admin-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.admin-table th, .admin-table td { white-space: nowrap; }
 .admin-table th { text-align: left; color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: .03em; padding: 8px 10px; border-bottom: 1px solid var(--border); }
 .admin-table td { padding: 10px; border-bottom: 1px solid #f5ebef; }
 .admin-table tr:hover td { background: var(--rose-bg); cursor: pointer; }
@@ -189,11 +195,6 @@ const css = `
 .status-successful { background: #e4f4ec; color: #1f7a4f; }
 .status-failed { background: #fbe6e6; color: #a83232; }
 .status-refunded { background: #ececec; color: #555; }
-
-.slot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
-.slot-pill { border-radius: 10px; padding: 10px; text-align: center; font-size: 13px; font-weight: 700; cursor: default; border: 1px solid var(--border); }
-.slot-pill.available { background: #f5fbf7; color: #1f7a4f; }
-.slot-pill.booked { background: #fdf3f3; color: #a83232; cursor: pointer; }
 
 /* ---- Calendar ---- */
 .calendar-card { padding-bottom: 18px; }
@@ -244,9 +245,17 @@ const css = `
   .calendar-cell { min-height: 56px; padding: 6px; }
   .calendar-cell-badge { font-size: 10px; padding: 1px 6px; }
   .calendar-select { min-width: 0; flex: 1; }
+  .calendar-year-input { width: 66px; }
+  .calendar-nav-group { gap: 6px; }
+  .calendar-weekdays, .calendar-grid { gap: 4px; }
+}
+@media (max-width: 400px) {
+  .calendar-cell { min-height: 46px; padding: 4px; }
+  .calendar-cell-day { font-size: 12px; }
+  .calendar-cell-badge { font-size: 9px; padding: 1px 4px; }
 }
 
-.admin-login-wrap { min-height: 100vh; display: grid; place-items: center; }
+.admin-login-wrap { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
 .admin-login-card { background: white; border-radius: 18px; padding: 32px; width: 100%; max-width: 360px; box-shadow: 0 25px 70px rgba(90, 50, 70, .1); }
 .admin-login-card h2 { color: var(--brand); margin-bottom: 6px; }
 .admin-login-card p { color: var(--text-muted); font-size: 13px; margin-bottom: 20px; }
@@ -310,12 +319,40 @@ const css = `
   .admin-sidenav-logout span { display: none; }
   .admin-container { padding: 20px 16px 48px; }
   .admin-header { padding: 14px 16px; }
+  .admin-breadcrumb { font-size: 12px; }
   .analytics-grid { grid-template-columns: 1fr; }
+  .admin-detail-grid { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 560px) {
   .stat-grid { grid-template-columns: 1fr; }
   .stat-tile strong { font-size: 22px; }
   .analytics-total { font-size: 19px; }
+  .analytics-svg { touch-action: pan-y; }
+
+  .admin-card { padding: 16px; }
+  .admin-container { padding: 16px 12px 40px; }
+
+  /* Filter rows and detail-panel action rows both use .admin-toolbar - on
+     phone every child goes full-width and stacks, which is easier to read
+     and tap than a cramped horizontal row. */
+  .admin-toolbar { flex-direction: column; align-items: stretch; }
+  .admin-toolbar > * { width: 100%; }
+
+  .admin-detail-grid { grid-template-columns: 1fr; }
+
+  .admin-schedule-card { flex-direction: column; align-items: stretch; }
+  .admin-schedule-card .admin-field-group, .admin-schedule-card > button { width: 100%; }
+
+  /* A 320px-wide dropdown positioned off a header icon can overflow a
+     360px-wide phone screen - clamp it to the viewport instead. */
+  .admin-notif-panel { width: calc(100vw - 32px); max-width: 320px; right: -12px; }
+
+  .admin-header-actions { gap: 10px; }
+  .admin-avatar { width: 34px; height: 34px; font-size: 13px; }
+  .admin-icon-btn { width: 34px; height: 34px; }
+
+  .analytics-card-header { flex-wrap: wrap; }
+  .analytics-table-toggle { width: auto; }
 }
 `;
 

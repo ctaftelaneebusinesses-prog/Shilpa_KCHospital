@@ -82,9 +82,7 @@ export default function NotificationBell() {
             {items.map((item) => (
               <button key={item.id} className="admin-notif-item" onClick={() => goToAppointment(item)}>
                 <span className="admin-notif-item-title">{item.patient_name}</span>
-                <span className="admin-notif-item-meta">
-                  {item.appointment_date} · {item.time_label}
-                </span>
+                <span className="admin-notif-item-meta">{item.appointment_date}</span>
                 <span className="admin-notif-item-time">{timeAgo(item.updated_at)}</span>
               </button>
             ))}

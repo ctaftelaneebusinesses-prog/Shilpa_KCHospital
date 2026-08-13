@@ -8,7 +8,7 @@ const MONTHS = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
-const SLOTS_PER_DAY = 8; // keep in sync with backend TIME_SLOTS (slots.py)
+const DAILY_CAPACITY = 10; // keep in sync with backend DAILY_CAPACITY (slots.py)
 
 const pad2 = (n) => String(n).padStart(2, "0");
 const toDateKey = (y, m, d) => `${y}-${pad2(m + 1)}-${pad2(d)}`;
@@ -154,8 +154,8 @@ export default function Calendar() {
               >
                 <span className="calendar-cell-day">{day}</span>
                 {stats?.active > 0 && (
-                  <span className={`calendar-cell-badge${stats.active >= SLOTS_PER_DAY ? " full" : ""}`}>
-                    {stats.active}/{SLOTS_PER_DAY}
+                  <span className={`calendar-cell-badge${stats.active >= DAILY_CAPACITY ? " full" : ""}`}>
+                    {stats.active}/{DAILY_CAPACITY}
                   </span>
                 )}
                 {!stats?.active && (stats?.cancelled > 0 || stats?.noShow > 0) && (
@@ -167,7 +167,7 @@ export default function Calendar() {
         </div>
 
         <div className="calendar-legend">
-          <span><i className="calendar-legend-swatch active" /> Booked slots</span>
+          <span><i className="calendar-legend-swatch active" /> Bookings</span>
           <span><i className="calendar-legend-swatch full" /> Fully booked</span>
           <span><i className="calendar-legend-swatch dot" /> Cancelled / no-show only</span>
         </div>
