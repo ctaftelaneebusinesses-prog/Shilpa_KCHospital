@@ -30,6 +30,10 @@ export async function getConsultationFee() {
   return request("/booking/fee");
 }
 
+export async function getReasonOptions() {
+  return request("/booking/reasons");
+}
+
 export async function holdSlot(payload) {
   return request("/booking/hold", { method: "POST", body: JSON.stringify(payload) });
 }
@@ -116,4 +120,16 @@ export async function updateAdminSettings(consultationFeeInr) {
     method: "POST",
     body: JSON.stringify({ consultationFeeInr }),
   });
+}
+
+export async function getAdminReasonOptions() {
+  return adminRequest("/admin/reasons");
+}
+
+export async function addAdminReasonOption(label) {
+  return adminRequest("/admin/reasons", { method: "POST", body: JSON.stringify({ label }) });
+}
+
+export async function deleteAdminReasonOption(id) {
+  return adminRequest(`/admin/reasons/${id}`, { method: "DELETE" });
 }

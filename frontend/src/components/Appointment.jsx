@@ -6,6 +6,7 @@ import {
   getAppointment,
   getAvailability,
   getConsultationFee,
+  getReasonOptions,
   holdSlot,
   verifyPayment,
 } from "../api";
@@ -19,6 +20,8 @@ const initialForm = {
   email: "",
   city: "",
   date: "",
+  reasons: [],
+  notSure: false,
   message: "",
 };
 
@@ -42,6 +45,8 @@ export default function Appointment() {
   const [form, setForm] = useState(initialForm);
   const [availability, setAvailability] = useState(null); // { capacity, bookedCount, full }
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const [reasonOptions, setReasonOptions] = useState([]);
+  const [reasonsLoading, setReasonsLoading] = useState(true);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -67,6 +72,19 @@ export default function Appointment() {
     setForm((prev) => ({ ...prev, phone: digitsOnly }));
   }
 
+  function toggleReason(label) {
+    setForm((prev) => ({
+      ...prev,
+      reasons: prev.reasons.includes(label)
+        ? prev.reasons.filter((item) => item !== label)
+        : [...prev.reasons, label],
+    }));
+  }
+
+  function toggleNotSure() {
+    setForm((prev) => ({ ...prev, notSure: !prev.notSure }));
+  }
+
   function handleVoiceClick() {
     startListening((transcript) => {
       setForm((prev) => ({
@@ -80,6 +98,13 @@ export default function Appointment() {
     getConsultationFee()
       .then((data) => setCurrentFee(data.consultationFeeInr))
       .catch(() => setCurrentFee(null));
+  }, []);
+
+  useEffect(() => {
+    getReasonOptions()
+      .then((data) => setReasonOptions(data.reasons))
+      .catch(() => setReasonOptions([]))
+      .finally(() => setReasonsLoading(false));
   }, []);
 
   useEffect(() => {
@@ -149,7 +174,10 @@ export default function Appointment() {
     setSubmitting(true);
 
     try {
-      const reason = [`City: ${city.trim()}`, form.message.trim()].filter(Boolean).join("\n");
+      const reasonParts = [`City: ${city.trim()}`];
+      if (form.reasons.length) reasonParts.push(form.reasons.join(", "));
+      if (form.notSure && form.message.trim()) reasonParts.push(`Other: ${form.message.trim()}`);
+      const reason = reasonParts.join("\n");
       const data = await holdSlot({
         name: name.trim(),
         phone: phone.trim(),
@@ -351,36 +379,63 @@ export default function Appointment() {
                 )}
               </div>
 
-              <div className="voice-box">
-                <div className="voice-header">
-                  <div>
-                    <strong>{t("voiceTitle")}</strong>
-                    <small>{t("voiceSubtitle")}</small>
+              <div className="form-group">
+                <label>{t("reasonLabel")}</label>
+                <div className="reason-checklist">
+                  {reasonsLoading ? (
+                    <p className="reason-loading">{t("loadingOptions")}</p>
+                  ) : (
+                    <>
+                      {reasonOptions.map((option) => {
+                        const checked = form.reasons.includes(option.label);
+                        return (
+                          <label key={option.id} className={`reason-checkbox${checked ? " checked" : ""}`}>
+                            <input type="checkbox" checked={checked} onChange={() => toggleReason(option.label)} />
+                            <span>{option.label}</span>
+                          </label>
+                        );
+                      })}
+                      <label className={`reason-checkbox${form.notSure ? " checked" : ""}`}>
+                        <input type="checkbox" checked={form.notSure} onChange={toggleNotSure} />
+                        <span>{t("notSureOption")}</span>
+                      </label>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {form.notSure && (
+                <div className="voice-box">
+                  <div className="voice-header">
+                    <div>
+                      <strong>{t("voiceTitle")}</strong>
+                      <small>{t("voiceSubtitle")}</small>
+                    </div>
+
+                    <button
+                      type="button"
+                      className={`voice-btn${listening ? " listening" : ""}`}
+                      onClick={handleVoiceClick}
+                      disabled={!voiceSupported}
+                    >
+                      🎙️
+                    </button>
                   </div>
 
-                  <button
-                    type="button"
-                    className={`voice-btn${listening ? " listening" : ""}`}
-                    onClick={handleVoiceClick}
-                    disabled={!voiceSupported}
-                  >
-                    🎙️
-                  </button>
+                  <textarea
+                    rows="3"
+                    placeholder="You can speak any additional information..."
+                    value={form.message}
+                    onChange={updateField("message")}
+                  />
+
+                  <span className="voice-status">
+                    {voiceSupported
+                      ? statusText
+                      : "Voice input is not supported in this browser."}
+                  </span>
                 </div>
-
-                <textarea
-                  rows="3"
-                  placeholder="You can speak any additional information..."
-                  value={form.message}
-                  onChange={updateField("message")}
-                />
-
-                <span className="voice-status">
-                  {voiceSupported
-                    ? statusText
-                    : "Voice input is not supported in this browser."}
-                </span>
-              </div>
+              )}
 
               {currentFee === 0 && (
                 <p className="body-text" style={{ color: "#2f8a4e", fontWeight: 600 }}>

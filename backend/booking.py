@@ -41,6 +41,18 @@ def consultation_fee():
     return jsonify({"consultationFeeInr": get_consultation_fee()}), 200
 
 
+@booking_bp.get("/reasons")
+def reason_options():
+    supabase = get_supabase()
+    result = (
+        supabase.table("reason_options")
+        .select("id, label")
+        .order("sort_order")
+        .execute()
+    )
+    return jsonify({"reasons": result.data}), 200
+
+
 @booking_bp.post("/hold")
 def hold_slot():
     payload = request.get_json(silent=True) or {}

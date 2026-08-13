@@ -2,7 +2,7 @@ import re
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta, timezone
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, current_app, jsonify, request
 
 from auth import require_admin
 from settings import get_consultation_fee, set_consultation_fee
@@ -447,3 +447,48 @@ def update_settings():
 
     updated = set_consultation_fee(round(fee, 2))
     return jsonify({"consultationFeeInr": updated}), 200
+
+
+@admin_bp.get("/reasons")
+@require_admin
+def list_reason_options():
+    supabase = get_supabase()
+    result = supabase.table("reason_options").select("id, label").order("sort_order").execute()
+    return jsonify({"reasons": result.data}), 200
+
+
+@admin_bp.post("/reasons")
+@require_admin
+def add_reason_option():
+    payload = request.get_json(silent=True) or {}
+    label = str(payload.get("label", "")).strip()
+    if not label:
+        return jsonify({"error": "label is required."}), 400
+
+    supabase = get_supabase()
+    existing = supabase.table("reason_options").select("sort_order").order("sort_order", desc=True).limit(1).execute()
+    next_sort_order = (existing.data[0]["sort_order"] + 1) if existing.data else 1
+
+    try:
+        result = (
+            supabase.table("reason_options")
+            .insert({"label": label, "sort_order": next_sort_order})
+            .execute()
+        )
+    except Exception as error:  # noqa: BLE001 - postgrest raises a generic APIError
+        if "23505" in str(error) or "duplicate key" in str(error).lower():
+            return jsonify({"error": "This option already exists."}), 409
+        current_app.logger.exception("Failed to add reason option")
+        return jsonify({"error": "Could not add this option. Please try again."}), 500
+
+    return jsonify(result.data[0]), 201
+
+
+@admin_bp.delete("/reasons/<reason_id>")
+@require_admin
+def delete_reason_option(reason_id):
+    supabase = get_supabase()
+    result = supabase.table("reason_options").delete().eq("id", reason_id).execute()
+    if not result.data:
+        return jsonify({"error": "Option not found."}), 404
+    return jsonify({"status": "deleted"}), 200

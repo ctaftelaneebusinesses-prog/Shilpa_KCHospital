@@ -221,6 +221,15 @@ button, input, select, textarea { font-family: inherit; }
 .form-error { color: #c0392b; font-size: 12px; margin: -8px 0 14px; }
 .date-availability-note { font-size: 12px; font-weight: 600; margin-top: 7px; color: #2f8a4e; }
 .date-availability-note.full { color: #c0392b; }
+.reason-checklist { display: flex; flex-wrap: wrap; gap: 8px; }
+.reason-checkbox {
+  display: flex; align-items: center; gap: 7px; padding: 8px 12px; border: 1px solid #e8dbe1;
+  border-radius: 9px; font-size: 12.5px; color: #5d5058; cursor: pointer; background: #fffafd;
+  transition: border-color .15s, background .15s;
+}
+.reason-checkbox.checked { border-color: #9f5276; background: #fdf1f6; color: #9f5276; font-weight: 600; }
+.reason-checkbox input { margin: 0; accent-color: #9f5276; }
+.reason-loading { font-size: 12.5px; color: #998c93; margin: 0; }
 .link-btn {
   background: none; border: 0; padding: 0; color: #9f5276; font-size: 11px;
   text-decoration: underline; cursor: pointer;
