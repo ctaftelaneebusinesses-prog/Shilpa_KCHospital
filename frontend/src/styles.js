@@ -221,15 +221,36 @@ button, input, select, textarea { font-family: inherit; }
 .form-error { color: #c0392b; font-size: 12px; margin: -8px 0 14px; }
 .date-availability-note { font-size: 12px; font-weight: 600; margin-top: 7px; color: #2f8a4e; }
 .date-availability-note.full { color: #c0392b; }
-.reason-checklist { display: flex; flex-wrap: wrap; gap: 8px; }
-.reason-checkbox {
-  display: flex; align-items: center; gap: 7px; padding: 8px 12px; border: 1px solid #e8dbe1;
-  border-radius: 9px; font-size: 12.5px; color: #5d5058; cursor: pointer; background: #fffafd;
-  transition: border-color .15s, background .15s;
+.reason-dropdown { position: relative; }
+.reason-dropdown-toggle {
+  width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  border: 1px solid #eadce2; background: #fffafd; border-radius: 10px; padding: 13px;
+  font-size: 13px; color: #453b42; cursor: pointer; text-align: left; font-family: inherit;
+  transition: border-color .15s, box-shadow .15s;
 }
-.reason-checkbox.checked { border-color: #9f5276; background: #fdf1f6; color: #9f5276; font-weight: 600; }
-.reason-checkbox input { margin: 0; accent-color: #9f5276; }
-.reason-loading { font-size: 12.5px; color: #998c93; margin: 0; }
+.reason-dropdown-toggle:hover { border-color: #d9bdc9; }
+.reason-dropdown-toggle span:first-child {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;
+}
+.reason-dropdown-toggle span.placeholder { color: #a89aa1; }
+.reason-dropdown-arrow { color: #9f5276; transition: transform .2s; flex-shrink: 0; }
+.reason-dropdown-arrow.open { transform: rotate(180deg); }
+.reason-dropdown-panel {
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 15; max-height: 260px;
+  overflow-y: auto; background: white; border: 1px solid #eadce2; border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(90, 50, 70, .14); padding: 8px;
+}
+.reason-dropdown-panel .reason-checkbox {
+  display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px;
+  font-size: 13px; color: #5d5058; cursor: pointer; transition: background .15s; margin: 0;
+}
+.reason-checkbox:hover { background: #fdf4f8; }
+.reason-checkbox input[type="checkbox"] {
+  width: 16px; height: 16px; margin: 0; padding: 0; border: none; background: none;
+  border-radius: 0; accent-color: #9f5276; flex: 0 0 auto;
+}
+.reason-checkbox.not-sure { margin-top: 4px; border-top: 1px solid #f0dfe7; padding-top: 12px; font-style: italic; }
+.reason-loading { font-size: 12.5px; color: #998c93; margin: 0; padding: 6px 4px; }
 .link-btn {
   background: none; border: 0; padding: 0; color: #9f5276; font-size: 11px;
   text-decoration: underline; cursor: pointer;

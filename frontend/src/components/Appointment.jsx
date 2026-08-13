@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLanguage } from "../LanguageContext";
 import { useVoiceInput } from "../hooks/useVoiceInput";
 import {
@@ -47,6 +47,8 @@ export default function Appointment() {
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const [reasonOptions, setReasonOptions] = useState([]);
   const [reasonsLoading, setReasonsLoading] = useState(true);
+  const [reasonDropdownOpen, setReasonDropdownOpen] = useState(false);
+  const reasonDropdownRef = useRef(null);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -106,6 +108,17 @@ export default function Appointment() {
       .catch(() => setReasonOptions([]))
       .finally(() => setReasonsLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (!reasonDropdownOpen) return;
+    function handleClickOutside(event) {
+      if (reasonDropdownRef.current && !reasonDropdownRef.current.contains(event.target)) {
+        setReasonDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [reasonDropdownOpen]);
 
   useEffect(() => {
     if (!form.date) {
@@ -272,6 +285,8 @@ export default function Appointment() {
     setError("");
   }
 
+  const selectedReasonLabels = form.notSure ? [...form.reasons, t("notSureOption")] : form.reasons;
+
   return (
     <section className="appointment section" id="appointment">
       <div className="container appointment-grid">
@@ -379,27 +394,47 @@ export default function Appointment() {
                 )}
               </div>
 
-              <div className="form-group">
+              <div className="form-group" ref={reasonDropdownRef}>
                 <label>{t("reasonLabel")}</label>
-                <div className="reason-checklist">
-                  {reasonsLoading ? (
-                    <p className="reason-loading">{t("loadingOptions")}</p>
-                  ) : (
-                    <>
-                      {reasonOptions.map((option) => {
-                        const checked = form.reasons.includes(option.label);
-                        return (
-                          <label key={option.id} className={`reason-checkbox${checked ? " checked" : ""}`}>
-                            <input type="checkbox" checked={checked} onChange={() => toggleReason(option.label)} />
-                            <span>{option.label}</span>
+                <div className="reason-dropdown">
+                  <button
+                    type="button"
+                    className="reason-dropdown-toggle"
+                    onClick={() => setReasonDropdownOpen((open) => !open)}
+                    aria-expanded={reasonDropdownOpen}
+                  >
+                    <span className={selectedReasonLabels.length ? "" : "placeholder"}>
+                      {selectedReasonLabels.length ? selectedReasonLabels.join(", ") : t("reasonPlaceholder")}
+                    </span>
+                    <span className={`reason-dropdown-arrow${reasonDropdownOpen ? " open" : ""}`}>▾</span>
+                  </button>
+
+                  {reasonDropdownOpen && (
+                    <div className="reason-dropdown-panel">
+                      {reasonsLoading ? (
+                        <p className="reason-loading">{t("loadingOptions")}</p>
+                      ) : (
+                        <>
+                          {reasonOptions.map((option) => {
+                            const checked = form.reasons.includes(option.label);
+                            return (
+                              <label key={option.id} className="reason-checkbox">
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={() => toggleReason(option.label)}
+                                />
+                                <span>{option.label}</span>
+                              </label>
+                            );
+                          })}
+                          <label className="reason-checkbox not-sure">
+                            <input type="checkbox" checked={form.notSure} onChange={toggleNotSure} />
+                            <span>{t("notSureOption")}</span>
                           </label>
-                        );
-                      })}
-                      <label className={`reason-checkbox${form.notSure ? " checked" : ""}`}>
-                        <input type="checkbox" checked={form.notSure} onChange={toggleNotSure} />
-                        <span>{t("notSureOption")}</span>
-                      </label>
-                    </>
+                        </>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
