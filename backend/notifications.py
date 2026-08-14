@@ -1,7 +1,7 @@
 import logging
 import smtplib
 import socket
-import time
+import threading
 from email.mime.text import MIMEText
 from xml.sax.saxutils import escape
 
@@ -44,7 +44,22 @@ def _twilio_client():
     return TwilioClient(sid, token)
 
 
+def _send_email_blocking(host, port, user, password, from_addr, to_email, message) -> None:
+    try:
+        with _IPv4SMTP(host, port, timeout=8) as server:
+            server.starttls()
+            server.login(user, password)
+            server.sendmail(from_addr, [to_email], message.as_string())
+    except Exception:
+        logger.exception("Failed to send email to %s", to_email)
+
+
 def send_email(to_email: str, subject: str, body: str) -> None:
+    """Fires the SMTP send on a background daemon thread. Gmail SMTP has been
+    observed to hang (not just fail) from Railway's network, and blocking the
+    request thread on that risks the whole booking/payment request timing out
+    and getting killed by gunicorn - a failed notification must never cost a
+    patient their booking."""
     host = current_app.config["SMTP_HOST"]
     user = current_app.config["SMTP_USER"]
     password = current_app.config["SMTP_PASSWORD"]
@@ -62,22 +77,11 @@ def send_email(to_email: str, subject: str, body: str) -> None:
     message["From"] = from_addr
     message["To"] = to_email
 
-    attempts = 3
-    for attempt in range(1, attempts + 1):
-        try:
-            with _IPv4SMTP(host, port, timeout=10) as server:
-                server.starttls()
-                server.login(user, password)
-                server.sendmail(from_addr, [to_email], message.as_string())
-            return
-        except Exception:
-            if attempt == attempts:
-                logger.exception("Failed to send email to %s after %d attempts", to_email, attempts)
-            else:
-                logger.warning(
-                    "Attempt %d/%d failed sending email to %s; retrying", attempt, attempts, to_email
-                )
-                time.sleep(2 * attempt)
+    threading.Thread(
+        target=_send_email_blocking,
+        args=(host, port, user, password, from_addr, to_email, message),
+        daemon=True,
+    ).start()
 
 
 def send_whatsapp(to_phone: str, body: str) -> None:
