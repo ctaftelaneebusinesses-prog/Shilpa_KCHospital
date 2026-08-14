@@ -5,7 +5,7 @@ import {
   getAdminAppointments,
   updateAdminAppointmentStatus,
 } from "../api";
-import { formatDate, formatDateTime, formatINR } from "./format";
+import { formatDate, formatDateTime, formatINR, formatTime } from "./format";
 
 const STATUSES = ["payment_pending", "confirmed", "completed", "cancelled", "no_show"];
 // Matches the backend's DELETABLE_STATUSES (admin.py) - only a resolved
@@ -117,6 +117,7 @@ export default function AppointmentsList() {
                 <th>Patient</th>
                 <th>Phone</th>
                 <th>Date</th>
+                <th>Time</th>
                 <th>Booked On</th>
                 <th>Status</th>
               </tr>
@@ -128,6 +129,7 @@ export default function AppointmentsList() {
                   <td>{appointment.patient_name}</td>
                   <td>{appointment.patient_phone}</td>
                   <td>{formatDate(appointment.appointment_date)}</td>
+                  <td>{formatTime(appointment.appointment_time)}</td>
                   <td>{formatDateTime(appointment.created_at)}</td>
                   <td>
                     <span className={`status-badge status-${appointment.status}`}>{appointment.status}</span>
@@ -159,6 +161,10 @@ export default function AppointmentsList() {
             <div>
               <dt>Date</dt>
               <dd>{formatDate(detail.appointment_date)}</dd>
+            </div>
+            <div>
+              <dt>Time</dt>
+              <dd>{formatTime(detail.appointment_time)}</dd>
             </div>
             <div>
               <dt>Booked On</dt>

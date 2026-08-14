@@ -12,10 +12,15 @@ IST = timezone(timedelta(hours=5, minutes=30))
 def today_ist():
     return datetime.now(IST).date()
 
-# Historical slot labels, kept only so old appointments (booked before the
-# switch to date-only, capacity-based booking) still display a readable
-# time. New bookings no longer carry a time at all.
-TIME_SLOTS = [
+
+def now_ist():
+    return datetime.now(IST)
+
+# Labels for the old hourly slots (booked before the brief date-only,
+# capacity-based era introduced in migration 0005). Kept only so those
+# historical appointments still display a readable time - slot_label() falls
+# back to this list for any value not in the current TIME_SLOTS.
+LEGACY_TIME_SLOTS = [
     ("09:00", "09:00 AM"),
     ("10:00", "10:00 AM"),
     ("11:00", "11:00 AM"),
@@ -26,12 +31,32 @@ TIME_SLOTS = [
     ("17:00", "05:00 PM"),
 ]
 
-# Dr. Shilpa can't commit to specific appointment times (she's frequently
-# pulled into emergencies), so patients no longer pick a time - just a date,
-# capped at this many patients per day. Keep in sync with the
-# book_appointment() Postgres function (migrations/0005) and the frontend's
-# Calendar.jsx DAILY_CAPACITY constant.
-DAILY_CAPACITY = 10
+# Patients pick a specific time slot again (migration 0008): every 10
+# minutes from 10:00 AM up to (not including) 3:00 PM, one patient per slot.
+SLOT_START_MINUTES = 10 * 60
+SLOT_END_MINUTES = 15 * 60
+SLOT_INTERVAL_MINUTES = 10
+
+
+def _build_time_slots():
+    slots = []
+    for minutes in range(SLOT_START_MINUTES, SLOT_END_MINUTES, SLOT_INTERVAL_MINUTES):
+        hour, minute = divmod(minutes, 60)
+        value = f"{hour:02d}:{minute:02d}"
+        label = datetime(2000, 1, 1, hour, minute).strftime("%I:%M %p").lstrip("0")
+        slots.append((value, label))
+    return slots
+
+
+TIME_SLOTS = _build_time_slots()
+TIME_SLOT_VALUES = {value for value, _label in TIME_SLOTS}
+
+# Exactly one patient per time slot. Kept in sync with the book_appointment()
+# Postgres function (migrations/0008).
+SLOT_CAPACITY = 1
+# The day is "full" once every slot is taken. Kept in sync with the
+# frontend's Calendar.jsx DAILY_CAPACITY constant.
+DAILY_CAPACITY = len(TIME_SLOTS)
 # completed counts too: a patient already seen today still used up one of
 # the day's spots, even though their status has since moved on from confirmed.
 CAPACITY_STATUSES = ("payment_pending", "confirmed", "completed")
@@ -60,8 +85,8 @@ def expire_stale_holds():
 
 
 def get_daily_status(date_str: str):
-    """Returns how many of the day's capacity is used up, for the
-    date-picker's availability check (patients no longer see time slots)."""
+    """Returns how many of the day's slots are used up, for the date
+    picker's availability note (capacity is now just "number of slots")."""
     expire_stale_holds()
 
     supabase = get_supabase()
@@ -84,6 +109,36 @@ def get_daily_status(date_str: str):
     }
 
 
+def get_available_slots(date_str: str):
+    """Returns every slot for the day with an `available` flag, for the
+    patient-facing time picker: taken slots (an active booking already
+    holds them) and, for today, slots whose start time has already passed
+    are unavailable."""
+    expire_stale_holds()
+
+    supabase = get_supabase()
+    taken_rows = (
+        supabase.table("appointments")
+        .select("appointment_time")
+        .eq("appointment_date", date_str)
+        .in_("status", CAPACITY_STATUSES)
+        .is_("deleted_at", "null")
+        .execute()
+        .data
+    )
+    taken = {row["appointment_time"][:5] for row in taken_rows if row.get("appointment_time")}
+
+    is_today = date_str == today_ist().isoformat()
+    current_hhmm = now_ist().strftime("%H:%M")
+
+    slots = []
+    for value, label in TIME_SLOTS:
+        available = value not in taken and not (is_today and value <= current_hhmm)
+        slots.append({"value": value, "label": label, "available": available})
+
+    return slots
+
+
 def hold_expiry_timestamp():
     from flask import current_app
 
@@ -92,11 +147,11 @@ def hold_expiry_timestamp():
 
 
 def slot_label(value):
-    """value is HH:MM (legacy rows) or None (bookings made after the switch
-    to date-only booking, which never had a specific time)."""
+    """value is HH:MM, or None for the brief window (migration 0005-0008)
+    where bookings didn't carry a time at all."""
     if not value:
         return None
-    for slot_value, label in TIME_SLOTS:
+    for slot_value, label in TIME_SLOTS + LEGACY_TIME_SLOTS:
         if slot_value == value:
             return label
     return value

@@ -6,7 +6,7 @@ import {
   getAdminAppointmentsByDate,
   updateAdminAppointmentStatus,
 } from "../api";
-import { formatDate, formatDateTime, formatINR } from "./format";
+import { formatDate, formatDateTime, formatINR, formatTime } from "./format";
 
 // Matches the backend's DELETABLE_STATUSES (admin.py) - only a resolved
 // appointment can be archived, never an upcoming/paid or in-progress one.
@@ -93,6 +93,7 @@ export default function DateView() {
               <thead>
                 <tr>
                   <th>#</th>
+                  <th>Time</th>
                   <th>Patient</th>
                   <th>Phone</th>
                   <th>Status</th>
@@ -103,6 +104,7 @@ export default function DateView() {
                 {appointments.map((appointment, index) => (
                   <tr key={appointment.id} onClick={() => openAppointment(appointment.id)}>
                     <td>{index + 1}</td>
+                    <td>{formatTime(appointment.appointment_time)}</td>
                     <td>{appointment.patient_name}</td>
                     <td>{appointment.patient_phone}</td>
                     <td>
@@ -122,6 +124,10 @@ export default function DateView() {
           <h3 style={{ marginBottom: 14 }}>Appointment Detail</h3>
           {actionError && <p className="admin-error">{actionError}</p>}
           <dl className="admin-detail-grid">
+            <div>
+              <dt>Time</dt>
+              <dd>{formatTime(detail.appointment_time)}</dd>
+            </div>
             <div>
               <dt>Patient</dt>
               <dd>{detail.patient_name}</dd>

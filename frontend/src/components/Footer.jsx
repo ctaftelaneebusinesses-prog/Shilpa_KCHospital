@@ -22,6 +22,7 @@ export default function Footer() {
         <div className="footer-powered-by">
           <span>Powered by</span>
           <img src={craftlaneeLogo} alt="Craftlanee" />
+          <strong>Craftlanee</strong>
         </div>
       </div>
     </footer>

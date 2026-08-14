@@ -26,6 +26,10 @@ export async function getAvailability(date) {
   return request(`/booking/availability?date=${encodeURIComponent(date)}`);
 }
 
+export async function getSlots(date) {
+  return request(`/booking/slots?date=${encodeURIComponent(date)}`);
+}
+
 export async function getConsultationFee() {
   return request("/booking/fee");
 }

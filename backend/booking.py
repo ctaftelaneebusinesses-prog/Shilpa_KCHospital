@@ -6,9 +6,10 @@ from flask import Blueprint, current_app, jsonify, request
 from notifications import notify_free_booking
 from settings import get_consultation_fee
 from slots import (
-    DAILY_CAPACITY,
+    TIME_SLOT_VALUES,
     appointment_time_label,
     expire_stale_holds,
+    get_available_slots,
     get_daily_status,
     hold_expiry_timestamp,
     today_ist,
@@ -20,10 +21,15 @@ booking_bp = Blueprint("booking", __name__)
 PHONE_PATTERN = re.compile(r"^[0-9]{10}$")
 DATE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 DATE_FULL_MESSAGE = "This date is already fully booked. Please choose another date."
+SLOT_TAKEN_MESSAGE = "This time slot is no longer available. Please choose another."
 
 
 def _is_date_full(error: Exception) -> bool:
     return "DATE_FULL" in str(error)
+
+
+def _is_slot_taken(error: Exception) -> bool:
+    return "SLOT_TAKEN" in str(error)
 
 
 @booking_bp.get("/availability")
@@ -41,6 +47,23 @@ def availability():
         return jsonify({"error": "Cannot check availability for a past date."}), 400
 
     return jsonify(get_daily_status(date_str)), 200
+
+
+@booking_bp.get("/slots")
+def slots():
+    date_str = request.args.get("date", "")
+    if not DATE_PATTERN.match(date_str):
+        return jsonify({"error": "A valid date (YYYY-MM-DD) is required."}), 400
+
+    try:
+        requested = date.fromisoformat(date_str)
+    except ValueError:
+        return jsonify({"error": "A valid date (YYYY-MM-DD) is required."}), 400
+
+    if requested < today_ist():
+        return jsonify({"error": "Cannot check availability for a past date."}), 400
+
+    return jsonify({"date": date_str, "slots": get_available_slots(date_str)}), 200
 
 
 @booking_bp.get("/fee")
@@ -78,7 +101,7 @@ def reason_options():
 def hold_slot():
     payload = request.get_json(silent=True) or {}
 
-    required = ["name", "phone", "date"]
+    required = ["name", "phone", "date", "time"]
     missing = [field for field in required if not str(payload.get(field, "")).strip()]
     if missing:
         return jsonify({"error": f"Missing required fields: {', '.join(missing)}"}), 400
@@ -87,6 +110,7 @@ def hold_slot():
     phone = str(payload["phone"]).strip()
     email = str(payload.get("email", "")).strip() or None
     date_str = str(payload["date"]).strip()
+    time_str = str(payload["time"]).strip()
     reason = str(payload.get("reason", "")).strip() or None
     language = payload.get("language", "en")
 
@@ -94,6 +118,8 @@ def hold_slot():
         return jsonify({"error": "Please enter a valid 10-digit mobile number."}), 400
     if not DATE_PATTERN.match(date_str):
         return jsonify({"error": "A valid date (YYYY-MM-DD) is required."}), 400
+    if time_str not in TIME_SLOT_VALUES:
+        return jsonify({"error": "Please choose a valid time slot."}), 400
 
     try:
         requested = date.fromisoformat(date_str)
@@ -118,14 +144,16 @@ def hold_slot():
                 "p_phone": phone,
                 "p_email": email,
                 "p_date": date_str,
+                "p_time": time_str,
                 "p_reason": reason,
                 "p_language": language,
                 "p_status": status,
                 "p_hold_expires_at": hold_expires_at,
-                "p_capacity": DAILY_CAPACITY,
             },
         ).execute()
     except Exception as error:  # noqa: BLE001 - postgrest raises a generic APIError
+        if _is_slot_taken(error):
+            return jsonify({"error": SLOT_TAKEN_MESSAGE}), 409
         if _is_date_full(error):
             return jsonify({"error": DATE_FULL_MESSAGE}), 409
         current_app.logger.exception("Failed to create appointment hold")

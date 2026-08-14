@@ -6,6 +6,7 @@ from flask import Blueprint, current_app, jsonify, request
 
 from notifications import notify_payment_success
 from settings import get_consultation_fee
+from slots import appointment_time_label
 from supabase_client import get_supabase
 
 payments_bp = Blueprint("payments", __name__)
@@ -55,8 +56,11 @@ def _appointment_payment_summary(supabase, appointment_id):
         .limit(1)
         .execute()
     )
+    appointment_row = appointment.data[0] if appointment.data else None
+    if appointment_row:
+        appointment_row["time_label"] = appointment_time_label(appointment_row)
     return {
-        "appointment": appointment.data[0] if appointment.data else None,
+        "appointment": appointment_row,
         "payment": payment.data[0] if payment.data else None,
     }
 

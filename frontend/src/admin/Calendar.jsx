@@ -8,7 +8,7 @@ const MONTHS = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
-const DAILY_CAPACITY = 10; // keep in sync with backend DAILY_CAPACITY (slots.py)
+const DAILY_CAPACITY = 30; // keep in sync with backend DAILY_CAPACITY (slots.py: 10:00 AM-3:00 PM, every 10 min)
 
 const pad2 = (n) => String(n).padStart(2, "0");
 const toDateKey = (y, m, d) => `${y}-${pad2(m + 1)}-${pad2(d)}`;

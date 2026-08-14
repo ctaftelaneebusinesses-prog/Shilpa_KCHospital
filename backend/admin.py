@@ -286,7 +286,7 @@ def appointments_by_date(date_str):
         .is_("deleted_at", "null")
         .eq("appointment_date", date_str)
         .in_("status", ["payment_pending", "confirmed", "completed", "cancelled", "no_show"])
-        .order("created_at")
+        .order("appointment_time")
         .execute()
         .data
     )

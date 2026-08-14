@@ -221,6 +221,14 @@ button, input, select, textarea { font-family: inherit; }
 .form-error { color: #c0392b; font-size: 12px; margin: -8px 0 14px; }
 .date-availability-note { font-size: 12px; font-weight: 600; margin-top: 7px; color: #2f8a4e; }
 .date-availability-note.full { color: #c0392b; }
+.time-slot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 8px; }
+.time-slot-btn {
+  border: 1px solid #eadce2; background: #fffafd; border-radius: 10px; padding: 9px 6px;
+  font-size: 12px; font-weight: 600; color: #453b42; cursor: pointer; transition: 0.2s;
+}
+.time-slot-btn:hover:not(:disabled) { border-color: #b36a8b; }
+.time-slot-btn.selected { background: #9f5276; border-color: #9f5276; color: #fff; }
+.time-slot-btn:disabled { opacity: 0.35; cursor: not-allowed; text-decoration: line-through; }
 .reason-dropdown { position: relative; }
 .reason-dropdown-toggle {
   width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px;
@@ -292,9 +300,10 @@ footer { background: #2f2630; color: white; padding: 35px 0; }
 footer p { color: #b7aab1; font-size: 11px; }
 .footer-contact a { color: #e8c7d6; font-size: 12px; font-weight: 600; text-decoration: none; }
 .footer-contact a:hover { color: white; }
-.footer-powered-by { display: flex; align-items: center; gap: 8px; }
+.footer-powered-by { display: flex; align-items: center; gap: 6px; }
 .footer-powered-by span { color: #b7aab1; font-size: 11px; }
-.footer-powered-by img { height: 36px; width: auto; }
+.footer-powered-by img { height: 20px; width: auto; }
+.footer-powered-by strong { color: #e8c7d6; font-size: 12px; font-weight: 700; }
 
 /* FLOATING WHATSAPP */
 .floating-whatsapp {
