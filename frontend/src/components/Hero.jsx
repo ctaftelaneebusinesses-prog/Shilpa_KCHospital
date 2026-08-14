@@ -36,7 +36,7 @@ export default function Hero() {
               <span>→</span>
             </a>
 
-            <a href="tel:+918090905900" className="secondary-btn">
+            <a href="tel:+917207910548" className="secondary-btn">
               ☎ <span>{t("callNow")}</span>
             </a>
 

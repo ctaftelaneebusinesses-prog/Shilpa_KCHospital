@@ -6,7 +6,7 @@ export default function MobileBottomBar() {
 
   return (
     <div className="mobile-bottom-bar">
-      <a href="tel:+918090905900">
+      <a href="tel:+917207910548">
         <span>☎</span>
         <small>{t("call")}</small>
       </a>
@@ -21,7 +21,7 @@ export default function MobileBottomBar() {
         <small>{t("emergency")}</small>
       </a>
 
-      <a href="https://wa.me/918090905900" target="_blank" rel="noreferrer">
+      <a href="https://wa.me/917207910548" target="_blank" rel="noreferrer">
         <span>☘</span>
         <small>WhatsApp</small>
       </a>
