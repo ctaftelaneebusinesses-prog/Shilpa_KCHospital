@@ -302,8 +302,7 @@ footer p { color: #b7aab1; font-size: 11px; }
 .footer-contact a:hover { color: white; }
 .footer-powered-by { display: flex; align-items: center; gap: 6px; }
 .footer-powered-by span { color: #b7aab1; font-size: 11px; }
-.footer-powered-by img { height: 20px; width: auto; }
-.footer-powered-by strong { color: #e8c7d6; font-size: 12px; font-weight: 700; }
+.footer-powered-by img { height: 22px; width: auto; }
 
 /* FLOATING WHATSAPP */
 .floating-whatsapp {
