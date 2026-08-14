@@ -1,5 +1,6 @@
 import logging
 import smtplib
+import socket
 from email.mime.text import MIMEText
 from xml.sax.saxutils import escape
 
@@ -11,6 +12,17 @@ from settings import get_consultation_fee
 from slots import appointment_time_label
 
 logger = logging.getLogger(__name__)
+
+
+class _IPv4SMTP(smtplib.SMTP):
+    """Railway's outbound networking prefers IPv6, which currently has no
+    working route to smtp.gmail.com and fails with "Network is unreachable".
+    Forcing the socket connection to an IPv4 address works around that while
+    still validating TLS against the original hostname."""
+
+    def _get_socket(self, host, port, timeout):
+        addr_info = socket.getaddrinfo(host, port, socket.AF_INET, socket.SOCK_STREAM)
+        return socket.create_connection(addr_info[0][4], timeout, self.source_address)
 
 
 def _to_e164(phone: str) -> str:
@@ -50,7 +62,7 @@ def send_email(to_email: str, subject: str, body: str) -> None:
     message["To"] = to_email
 
     try:
-        with smtplib.SMTP(host, port, timeout=10) as server:
+        with _IPv4SMTP(host, port, timeout=10) as server:
             server.starttls()
             server.login(user, password)
             server.sendmail(from_addr, [to_email], message.as_string())
