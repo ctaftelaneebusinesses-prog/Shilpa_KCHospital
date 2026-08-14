@@ -1,6 +1,7 @@
 import logging
 import smtplib
 import socket
+import time
 from email.mime.text import MIMEText
 from xml.sax.saxutils import escape
 
@@ -61,26 +62,22 @@ def send_email(to_email: str, subject: str, body: str) -> None:
     message["From"] = from_addr
     message["To"] = to_email
 
-    try:
-        with _IPv4SMTP(host, port, timeout=10) as server:
-            server.starttls()
-            server.login(user, password)
-            server.sendmail(from_addr, [to_email], message.as_string())
-    except Exception:
-        logger.exception("Failed to send email to %s", to_email)
-
-
-def send_sms(to_phone: str, body: str) -> None:
-    if not to_phone:
-        return
-    from_number = current_app.config["TWILIO_SMS_NUMBER"]
-    client = _twilio_client()
-    if not client or not from_number:
-        return
-    try:
-        client.messages.create(to=_to_e164(to_phone), from_=from_number, body=body)
-    except TwilioRestException:
-        logger.exception("Failed to send SMS to %s", to_phone)
+    attempts = 3
+    for attempt in range(1, attempts + 1):
+        try:
+            with _IPv4SMTP(host, port, timeout=10) as server:
+                server.starttls()
+                server.login(user, password)
+                server.sendmail(from_addr, [to_email], message.as_string())
+            return
+        except Exception:
+            if attempt == attempts:
+                logger.exception("Failed to send email to %s after %d attempts", to_email, attempts)
+            else:
+                logger.warning(
+                    "Attempt %d/%d failed sending email to %s; retrying", attempt, attempts, to_email
+                )
+                time.sleep(2 * attempt)
 
 
 def send_whatsapp(to_phone: str, body: str) -> None:
@@ -113,10 +110,10 @@ def make_call(to_phone: str, spoken_message: str) -> None:
 
 
 def notify_payment_success(appointment: dict, payment: dict) -> None:
-    """Fires clinic (WhatsApp + Email + SMS) and patient (Email + WhatsApp +
-    SMS + call) notifications for a just-confirmed, paid appointment. Each
-    channel fails independently and only logs, so one broken integration
-    never blocks the others or the payment response itself."""
+    """Fires clinic (WhatsApp + Email) and patient (Email + WhatsApp + call)
+    notifications for a just-confirmed, paid appointment. Each channel fails
+    independently and only logs, so one broken integration never blocks the
+    others or the payment response itself."""
     patient_name = appointment["patient_name"]
     patient_phone = appointment["patient_phone"]
     patient_email = appointment.get("patient_email")
@@ -143,11 +140,9 @@ def notify_payment_success(appointment: dict, payment: dict) -> None:
 
     send_whatsapp(clinic_phone, clinic_message)
     send_email(clinic_email, "New paid appointment - Dr. Shilpa", clinic_message)
-    send_sms(clinic_phone, clinic_message)
 
     send_email(patient_email, "Your appointment is confirmed - Dr. Shilpa", patient_message)
     send_whatsapp(patient_phone, patient_message)
-    send_sms(patient_phone, patient_message)
     if current_app.config["PATIENT_CONFIRMATION_CALL"]:
         make_call(
             patient_phone,
@@ -184,11 +179,9 @@ def notify_free_booking(appointment: dict) -> None:
 
     send_whatsapp(clinic_phone, clinic_message)
     send_email(clinic_email, "New free appointment - Dr. Shilpa", clinic_message)
-    send_sms(clinic_phone, clinic_message)
 
     send_email(patient_email, "Your appointment is confirmed - Dr. Shilpa", patient_message)
     send_whatsapp(patient_phone, patient_message)
-    send_sms(patient_phone, patient_message)
     if current_app.config["PATIENT_CONFIRMATION_CALL"]:
         make_call(
             patient_phone,
