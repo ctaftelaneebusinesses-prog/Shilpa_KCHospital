@@ -1,0 +1,4 @@
+status=200
+{"id": "ec62f72c-78fb-4e7f-b3ef-d5d941302caa", "label": "క్రమరహిత పీరియడ్స్", "labelEn": "Irregular periods"}
+{"id": "4ed1ce62-54e7-41cf-8971-7478c3eafc44", "label": "భారీ / బాధాకరమైన కాలాలు", "labelEn": "Heavy / painful periods"}
+{"id": "ef27d4a7-4cb4-40b5-bfeb-eb28b925f675", "label": "PCOS / PCOD", "labelEn": "PCOS / PCOD"}

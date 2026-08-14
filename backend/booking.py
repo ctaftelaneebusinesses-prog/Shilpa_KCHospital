@@ -50,14 +50,28 @@ def consultation_fee():
 
 @booking_bp.get("/reasons")
 def reason_options():
+    # Translated columns can be null (translation failed, or the row
+    # predates migration 0007) - always fall back to the English label.
+    language_column = {"te": "label_te", "ta": "label_ta", "kn": "label_kn"}.get(
+        request.args.get("language", "en")
+    )
+
     supabase = get_supabase()
     result = (
         supabase.table("reason_options")
-        .select("id, label")
+        .select("id, label, label_te, label_ta, label_kn")
         .order("sort_order")
         .execute()
     )
-    return jsonify({"reasons": result.data}), 200
+    reasons = [
+        {
+            "id": row["id"],
+            "label": (row.get(language_column) if language_column else None) or row["label"],
+            "labelEn": row["label"],
+        }
+        for row in result.data
+    ]
+    return jsonify({"reasons": reasons}), 200
 
 
 @booking_bp.post("/hold")

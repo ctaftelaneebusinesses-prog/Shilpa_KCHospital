@@ -30,8 +30,8 @@ export async function getConsultationFee() {
   return request("/booking/fee");
 }
 
-export async function getReasonOptions() {
-  return request("/booking/reasons");
+export async function getReasonOptions(language) {
+  return request(`/booking/reasons?language=${encodeURIComponent(language || "en")}`);
 }
 
 export async function holdSlot(payload) {

@@ -1,3 +1,5 @@
+import craftlaneeLogo from "../assets/craftlanee-logo.png";
+
 export default function Footer() {
   return (
     <footer>
@@ -12,6 +14,15 @@ export default function Footer() {
 
         <p>© 2026 KC Hospital. All rights reserved.</p>
         <p>Dr. Shilpa · Gynaecologist · Kuppam</p>
+
+        <div className="footer-contact">
+          <a href="tel:+917207910548">☎ +91 72079 10548</a>
+        </div>
+
+        <div className="footer-powered-by">
+          <span>Powered by</span>
+          <img src={craftlaneeLogo} alt="Craftlanee" />
+        </div>
       </div>
     </footer>
   );

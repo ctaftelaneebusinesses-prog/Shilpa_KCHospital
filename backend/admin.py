@@ -8,6 +8,7 @@ from auth import require_admin
 from settings import get_consultation_fee, set_consultation_fee
 from slots import CAPACITY_STATUSES, DAILY_CAPACITY, appointment_time_label, expire_stale_holds, today_ist
 from supabase_client import get_supabase
+from translate import translate_label
 
 admin_bp = Blueprint("admin", __name__)
 
@@ -475,10 +476,22 @@ def add_reason_option():
     existing = supabase.table("reason_options").select("sort_order").order("sort_order", desc=True).limit(1).execute()
     next_sort_order = (existing.data[0]["sort_order"] + 1) if existing.data else 1
 
+    # Best-effort - translate_label() never raises, so a flaky translate
+    # call can never block adding an option (it just falls back to English).
+    translations = translate_label(label)
+
     try:
         result = (
             supabase.table("reason_options")
-            .insert({"label": label, "sort_order": next_sort_order})
+            .insert(
+                {
+                    "label": label,
+                    "label_te": translations["te"],
+                    "label_ta": translations["ta"],
+                    "label_kn": translations["kn"],
+                    "sort_order": next_sort_order,
+                }
+            )
             .execute()
         )
     except Exception as error:  # noqa: BLE001 - postgrest raises a generic APIError

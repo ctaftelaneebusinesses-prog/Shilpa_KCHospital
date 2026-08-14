@@ -74,12 +74,16 @@ export default function Appointment() {
     setForm((prev) => ({ ...prev, phone: digitsOnly }));
   }
 
-  function toggleReason(label) {
+  // form.reasons stores the stable English label (never the translated
+  // display text) - it's what gets sent to the backend and read by the
+  // (English-only) admin dashboard, and it stays valid across a language
+  // switch without needing to be remapped.
+  function toggleReason(labelEn) {
     setForm((prev) => ({
       ...prev,
-      reasons: prev.reasons.includes(label)
-        ? prev.reasons.filter((item) => item !== label)
-        : [...prev.reasons, label],
+      reasons: prev.reasons.includes(labelEn)
+        ? prev.reasons.filter((item) => item !== labelEn)
+        : [...prev.reasons, labelEn],
     }));
   }
 
@@ -103,11 +107,12 @@ export default function Appointment() {
   }, []);
 
   useEffect(() => {
-    getReasonOptions()
+    setReasonsLoading(true);
+    getReasonOptions(language)
       .then((data) => setReasonOptions(data.reasons))
       .catch(() => setReasonOptions([]))
       .finally(() => setReasonsLoading(false));
-  }, []);
+  }, [language]);
 
   useEffect(() => {
     if (!reasonDropdownOpen) return;
@@ -285,7 +290,15 @@ export default function Appointment() {
     setError("");
   }
 
-  const selectedReasonLabels = form.notSure ? [...form.reasons, t("notSureOption")] : form.reasons;
+  // form.reasons holds stable English labels; look each back up against the
+  // currently-loaded (language-appropriate) options for display so the
+  // summary text always matches whatever language the checklist itself is
+  // showing, even though the underlying selection never changes on a
+  // language switch.
+  const selectedReasonDisplay = form.reasons.map(
+    (labelEn) => reasonOptions.find((option) => option.labelEn === labelEn)?.label || labelEn
+  );
+  const selectedReasonLabels = form.notSure ? [...selectedReasonDisplay, t("notSureOption")] : selectedReasonDisplay;
 
   return (
     <section className="appointment section" id="appointment">
@@ -416,13 +429,13 @@ export default function Appointment() {
                       ) : (
                         <>
                           {reasonOptions.map((option) => {
-                            const checked = form.reasons.includes(option.label);
+                            const checked = form.reasons.includes(option.labelEn);
                             return (
                               <label key={option.id} className="reason-checkbox">
                                 <input
                                   type="checkbox"
                                   checked={checked}
-                                  onChange={() => toggleReason(option.label)}
+                                  onChange={() => toggleReason(option.labelEn)}
                                 />
                                 <span>{option.label}</span>
                               </label>
