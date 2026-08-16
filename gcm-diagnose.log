@@ -1,0 +1,133 @@
+﻿Diagnose log at 2026-08-16T14:53:35Z
+
+AppPath: C:\Program Files\Git\mingw64\bin\git-credential-manager.exe
+InstallDir: C:\Program Files\Git\mingw64\bin\
+Version: 2.7.3+5fa7116896c82164996a609accd1c5ad90fe730a
+
+------------
+Diagnostic: Environment
+Skipped: False
+Success: True
+Exception: None
+Log:
+OSType: Windows
+OSVersion: 10.0 (build 26200)
+Reading environment variables... OK
+ Variables:
+OneDriveConsumer=C:\Users\ARJUN\OneDrive
+ProgramFiles(x86)=C:\Program Files (x86)
+MSYSTEM=MINGW64
+ProgramW6432=C:\Program Files
+EXEPATH=C:\Program Files\Git\bin
+PROCESSOR_IDENTIFIER=Intel64 Family 6 Model 154 Stepping 3, GenuineIntel
+TMP=C:\Users\ARJUN\AppData\Local\Temp
+PROCESSOR_ARCHITECTURE=AMD64
+SYSTEMROOT=C:\Windows
+CLAUDE_CODE_ENABLE_SDK_FILE_CHECKPOINTING=true
+ELECTRON_RUN_AS_NODE=1
+ProgramData=C:\ProgramData
+VSCODE_CWD=C:\Users\ARJUN\AppData\Local\Programs\Microsoft VS Code
+PWD=C:/Users/ARJUN/OneDrive/Desktop/Dr. SHILPA
+USERDOMAIN=LAPTOP-8VKMFV65
+PROCESSOR_REVISION=9a03
+CLAUDE_CODE_EXECPATH=C:\Users\ARJUN\.vscode\extensions\anthropic.claude-code-2.1.232-win32-x64\resources\native-binary\claude.exe
+TEMP=C:\Users\ARJUN\AppData\Local\Temp
+USERPROFILE=C:\Users\ARJUN
+LOGONSERVER=\\LAPTOP-8VKMFV65
+TERM=xterm-256color
+USERNAME=ARJUN
+SHELL=C:\Program Files\Git\bin\bash.exe
+CLAUDE_CODE_ENTRYPOINT=claude-vscode
+PLINK_PROTOCOL=ssh
+COMMONPROGRAMFILES=C:\Program Files\Common Files
+_=C:/Program Files/Git/mingw64/bin/git-credential-manager
+NoDefaultCurrentDirectoryInExePath=1
+OneDrive=C:\Users\ARJUN\OneDrive
+LOCALAPPDATA=C:\Users\ARJUN\AppData\Local
+PATH=C:\Users\ARJUN\bin;C:\Program Files\Git\mingw64\bin;C:\Program Files\Git\usr\local\bin;C:\Program Files\Git\usr\bin;C:\Program Files\Git\usr\bin;C:\Program Files\Git\mingw64\bin;C:\Program Files\Git\usr\bin;C:\Users\ARJUN\bin;C:\Users\ARJUN\OneDrive\Desktop\Dr. SHILPA\venv\Scripts;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32\OpenSSH;C:\Program Files\nodejs;C:\Program Files\Git\cmd;C:\Users\ARJUN\AppData\Local\Programs\Python\Python312\Scripts;C:\Users\ARJUN\AppData\Local\Programs\Python\Python312;C:\Users\ARJUN\AppData\Local\Programs\Python\Launcher;C:\Users\ARJUN\AppData\Local\Microsoft\WindowsApps;C:\Users\ARJUN\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\ARJUN\AppData\Local\Programs\cursor\resources\app\bin;C:\Users\ARJUN\AppData\Local\GitHubDesktop\bin;C:\Users\ARJUN\AppData\Roaming\npm;C:\Users\ARJUN\AppData\Local\Kingsoft\WPS Office\12.1.0.27458\clitool;C:\Users\ARJUN\AppData\Local\Programs\DockerDesktop\resources\bin;C:\Users\ARJUN\AppData\Local\Programs\Antigravity IDE\bin;C:\Program Files\Git\usr\bin\vendor_perl;C:\Program Files\Git\usr\bin\core_perl
+CommonProgramFiles(x86)=C:\Program Files (x86)\Common Files
+ZES_ENABLE_SYSMAN=1
+PROCESSOR_LEVEL=6
+EFC_37340_1592913036=1
+CLAUDE_PID=19748
+APPLICATION_INSIGHTS_NO_STATSBEAT=true
+AI_AGENT=claude-code_2-1-232_agent
+HOMEPATH=\Users\ARJUN
+VSCODE_NLS_CONFIG={"userLocale":"en-us","osLocale":"en-us","resolvedLanguage":"en","defaultMessagesFile":"C:\\Users\\ARJUN\\AppData\\Local\\Programs\\Microsoft VS Code\\a5b5009513\\resources\\app\\out\\nls.messages.json","locale":"en-us","availableLanguages":{}}
+CLAUDE_EFFORT=high
+ALLUSERSPROFILE=C:\ProgramData
+EFC_37340_4126798990=1
+MCP_CONNECTION_NONBLOCKING=true
+CHROME_CRASHPAD_PIPE_NAME=\\.\pipe\crashpad_43348_RNJVFJSKEIZDIEDA
+VSCODE_ESM_ENTRYPOINT=vs/workbench/api/node/extensionHostProcess
+COREPACK_ENABLE_AUTO_PIN=0
+PROGRAMFILES=C:\Program Files
+SHLVL=1
+SESSIONNAME=Console
+CLAUDE_CODE_CHILD_SESSION=1
+DriverData=C:\Windows\System32\Drivers\DriverData
+HOMEDRIVE=C:
+VSCODE_PID=43348
+VSCODE_CRASH_REPORTER_PROCESS_TYPE=extensionHost
+GIT_TRACE2_PARENT_SID=9f1c33e0-ebca-4e73-b031-47bbe6870c9a
+NUMBER_OF_PROCESSORS=12
+OS=Windows_NT
+CLAUDE_CODE_ENABLE_TASKS=0
+MXC_BIN_DIR=c:\Users\ARJUN\AppData\Local\Programs\Microsoft VS Code\a5b5009513\resources\app\node_modules.asar.unpacked\@microsoft\mxc-sdk\bin
+WPSCLI_HOME=C:\Users\ARJUN\AppData\Local\Kingsoft\WPS Office\12.1.0.27458\clitool
+VSCODE_HANDLES_UNCAUGHT_ERRORS=true
+GIT_EDITOR=true
+PATHEXT=.COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC
+HOME=C:\Users\ARJUN
+VSCODE_IPC_HOOK=\\.\pipe\4c703733-1.133.0-main-sock
+CLAUDE_AGENT_SDK_VERSION=0.3.232
+PSModulePath=C:\Program Files\WindowsPowerShell\Modules;C:\Windows\system32\WindowsPowerShell\v1.0\Modules
+APPDATA=C:\Users\ARJUN\AppData\Roaming
+SYSTEMDRIVE=C:
+COMPUTERNAME=LAPTOP-8VKMFV65
+VIRTUAL_ENV=c:\Users\ARJUN\OneDrive\Desktop\Dr. SHILPA\venv
+COMSPEC=C:\Windows\system32\cmd.exe
+CLAUDE_CODE_SESSION_ID=321a19a8-8c47-4f4f-b609-2fd4ef58762d
+CommonProgramW6432=C:\Program Files\Common Files
+CLAUDECODE=1
+WINDIR=C:\Windows
+USERDOMAIN_ROAMINGPROFILE=LAPTOP-8VKMFV65
+COPILOT_OTEL_FILE_EXPORTER_PATH=\\.\nul
+VSCODE_CODE_CACHE_PATH=C:\Users\ARJUN\AppData\Roaming\Code\CachedData\a5b500951314efd502d07465bd138dfbd714a960
+PUBLIC=C:\Users\Public
+
+
+------------
+Diagnostic: File system
+Skipped: False
+Success: True
+Exception: None
+Log:
+Temporary directory is 'C:\Users\ARJUN\AppData\Local\Temp\'...
+Checking basic file I/O...
+Writing to temporary file 'C:\Users\ARJUN\AppData\Local\Temp\763c48a586c0fb15c5e5d1b9'... OK
+Reading from temporary file 'C:\Users\ARJUN\AppData\Local\Temp\763c48a586c0fb15c5e5d1b9'... OK
+Deleting temporary file 'C:\Users\ARJUN\AppData\Local\Temp\763c48a586c0fb15c5e5d1b9'... OK
+Testing IFileSystem instance...
+UserHomePath: C:\Users\ARJUN
+UserDataDirectoryPath: C:\Users\ARJUN\.gcm
+GetCurrentDirectory(): C:\Users\ARJUN\OneDrive\Desktop\Dr. SHILPA
+
+------------
+Diagnostic: Networking
+Skipped: False
+Success: True
+Exception: None
+Log:
+Checking networking and HTTP stack...
+Creating HTTP client... OK
+IsNetworkAvailable: True
+Sending HEAD request to http://example.com...Sending HEAD request to https://example.com... OK
+Acquiring free TCP port... OK
+Testing local HTTP loopback connections...
+Creating new HTTP listener for http://localhost:64298/... OK
+Waiting for loopback connection... OK
+Writing response... OK
+Waiting for response data... OK
+Loopback connection data OK
+
