@@ -1,6 +1,6 @@
 import { useLanguage } from "../LanguageContext";
 import { EMERGENCY_NUMBER } from "../config";
-import doctorPhoto from "../assets/doctor.png";
+import doctorPhoto from "../assets/doctor.jpg";
 
 export default function Hero() {
   const { t } = useLanguage();

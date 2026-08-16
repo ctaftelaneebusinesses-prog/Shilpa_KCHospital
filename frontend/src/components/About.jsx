@@ -1,5 +1,5 @@
 import { useLanguage } from "../LanguageContext";
-import doctorPhoto from "../assets/doctor.png";
+import doctorPhoto from "../assets/doctor.jpg";
 
 export default function About() {
   const { t } = useLanguage();

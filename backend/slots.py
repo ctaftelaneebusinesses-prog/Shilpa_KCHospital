@@ -32,9 +32,10 @@ LEGACY_TIME_SLOTS = [
 ]
 
 # Patients pick a specific time slot again (migration 0008): every 10
-# minutes from 10:00 AM up to (not including) 3:00 PM, one patient per slot.
-SLOT_START_MINUTES = 10 * 60
-SLOT_END_MINUTES = 15 * 60
+# minutes from 1:00 PM up to (not including) 2:40 PM - 10 slots/day, one
+# patient per slot.
+SLOT_START_MINUTES = 13 * 60
+SLOT_END_MINUTES = 14 * 60 + 40
 SLOT_INTERVAL_MINUTES = 10
 
 
