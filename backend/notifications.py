@@ -1,29 +1,16 @@
 import logging
-import smtplib
-import socket
 import threading
-from email.mime.text import MIMEText
-from xml.sax.saxutils import escape
 
+import requests
 from flask import current_app
 from twilio.base.exceptions import TwilioRestException
 from twilio.rest import Client as TwilioClient
+from xml.sax.saxutils import escape
 
 from settings import get_consultation_fee
 from slots import appointment_time_label
 
 logger = logging.getLogger(__name__)
-
-
-class _IPv4SMTP(smtplib.SMTP):
-    """Railway's outbound networking prefers IPv6, which currently has no
-    working route to smtp.gmail.com and fails with "Network is unreachable".
-    Forcing the socket connection to an IPv4 address works around that while
-    still validating TLS against the original hostname."""
-
-    def _get_socket(self, host, port, timeout):
-        addr_info = socket.getaddrinfo(host, port, socket.AF_INET, socket.SOCK_STREAM)
-        return socket.create_connection(addr_info[0][4], timeout, self.source_address)
 
 
 def _to_e164(phone: str) -> str:
@@ -44,42 +31,35 @@ def _twilio_client():
     return TwilioClient(sid, token)
 
 
-def _send_email_blocking(host, port, user, password, from_addr, to_email, message) -> None:
+def _send_email_blocking(api_key, from_addr, to_email, subject, body) -> None:
     try:
-        with _IPv4SMTP(host, port, timeout=8) as server:
-            server.starttls()
-            server.login(user, password)
-            server.sendmail(from_addr, [to_email], message.as_string())
+        response = requests.post(
+            "https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {api_key}"},
+            json={"from": from_addr, "to": [to_email], "subject": subject, "text": body},
+            timeout=8,
+        )
+        response.raise_for_status()
     except Exception:
         logger.exception("Failed to send email to %s", to_email)
 
 
 def send_email(to_email: str, subject: str, body: str) -> None:
-    """Fires the SMTP send on a background daemon thread. Gmail SMTP has been
-    observed to hang (not just fail) from Railway's network, and blocking the
-    request thread on that risks the whole booking/payment request timing out
-    and getting killed by gunicorn - a failed notification must never cost a
-    patient their booking."""
-    host = current_app.config["SMTP_HOST"]
-    user = current_app.config["SMTP_USER"]
-    password = current_app.config["SMTP_PASSWORD"]
-    from_addr = current_app.config["SMTP_FROM"] or user
-    port = current_app.config["SMTP_PORT"]
+    """Fires the Resend API call on a background daemon thread so a slow or
+    failed send never blocks the booking/payment request itself - a failed
+    notification must never cost a patient their booking."""
+    api_key = current_app.config["RESEND_API_KEY"]
+    from_addr = current_app.config["RESEND_FROM_EMAIL"]
 
     if not to_email:
         return
-    if not (host and user and password):
-        logger.warning("SMTP not configured; skipping email to %s", to_email)
+    if not (api_key and from_addr):
+        logger.warning("Resend not configured; skipping email to %s", to_email)
         return
-
-    message = MIMEText(body)
-    message["Subject"] = subject
-    message["From"] = from_addr
-    message["To"] = to_email
 
     threading.Thread(
         target=_send_email_blocking,
-        args=(host, port, user, password, from_addr, to_email, message),
+        args=(api_key, from_addr, to_email, subject, body),
         daemon=True,
     ).start()
 

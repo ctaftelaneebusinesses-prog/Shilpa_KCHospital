@@ -30,12 +30,11 @@ class Config:
     CLINIC_NOTIFY_PHONE = os.getenv("CLINIC_NOTIFY_PHONE", "")
     CLINIC_NOTIFY_EMAIL = os.getenv("CLINIC_NOTIFY_EMAIL", "")
 
-    # Gmail SMTP (used to email both the clinic and the patient)
-    SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
-    SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-    SMTP_USER = os.getenv("SMTP_USER", "")
-    SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
-    SMTP_FROM = os.getenv("SMTP_FROM", "")
+    # Resend (used to email both the clinic and the patient). Gmail SMTP
+    # doesn't work from Railway - its network hangs on outbound SMTP - so
+    # notifications go through Resend's HTTPS API instead.
+    RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+    RESEND_FROM_EMAIL = os.getenv("RESEND_FROM_EMAIL", "")
 
     # Twilio (WhatsApp + SMS + voice call)
     TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "")
