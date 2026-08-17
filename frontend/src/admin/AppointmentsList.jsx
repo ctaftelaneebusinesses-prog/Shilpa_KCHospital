@@ -194,7 +194,18 @@ export default function AppointmentsList() {
               <dt>Transaction ID</dt>
               <dd>{detail.payments?.[0]?.razorpay_payment_id || "-"}</dd>
             </div>
+            <div>
+              <dt>UPI Reference</dt>
+              <dd>{detail.payments?.[0]?.upi_reference || "-"}</dd>
+            </div>
           </dl>
+
+          {detail.payments?.[0]?.status === "pending_verification" && (
+            <p className="body-text" style={{ marginTop: 12 }}>
+              This payment is awaiting manual verification — confirm or reject it from{" "}
+              <strong>Payment History</strong> after checking the UPI reference against your bank/UPI app.
+            </p>
+          )}
 
           {detail.status === "confirmed" && (
             <div className="admin-toolbar" style={{ marginTop: 18 }}>

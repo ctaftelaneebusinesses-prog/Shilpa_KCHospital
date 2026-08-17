@@ -23,6 +23,11 @@ class Config:
     RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "")
     RAZORPAY_WEBHOOK_SECRET = os.getenv("RAZORPAY_WEBHOOK_SECRET", "")
 
+    # Manual UPI QR payments (bypasses Razorpay - patient scans this UPI ID's
+    # QR and submits the transaction reference; an admin confirms manually)
+    CLINIC_UPI_ID = os.getenv("CLINIC_UPI_ID", "")
+    CLINIC_UPI_PAYEE_NAME = os.getenv("CLINIC_UPI_PAYEE_NAME", "Dr Shilpa Clinic")
+
     APPOINTMENT_HOLD_MINUTES = int(os.getenv("APPOINTMENT_HOLD_MINUTES", "10"))
     CONSULTATION_FEE_INR = float(os.getenv("CONSULTATION_FEE_INR", "500"))
 

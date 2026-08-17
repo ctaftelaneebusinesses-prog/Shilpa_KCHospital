@@ -68,7 +68,16 @@ def slots():
 
 @booking_bp.get("/fee")
 def consultation_fee():
-    return jsonify({"consultationFeeInr": get_consultation_fee()}), 200
+    return (
+        jsonify(
+            {
+                "consultationFeeInr": get_consultation_fee(),
+                "upiId": current_app.config["CLINIC_UPI_ID"],
+                "upiPayeeName": current_app.config["CLINIC_UPI_PAYEE_NAME"],
+            }
+        ),
+        200,
+    )
 
 
 @booking_bp.get("/reasons")

@@ -57,6 +57,10 @@ export async function verifyPayment(payload) {
   return request("/payments/verify", { method: "POST", body: JSON.stringify(payload) });
 }
 
+export async function bookWithManualPayment(payload) {
+  return request("/payments/manual/book", { method: "POST", body: JSON.stringify(payload) });
+}
+
 async function adminRequest(path, options = {}) {
   const session = supabase ? (await supabase.auth.getSession()).data?.session : null;
   const token = session?.access_token;
@@ -113,6 +117,14 @@ export async function deleteAdminAppointment(id) {
 export async function getAdminPayments(params = {}) {
   const query = new URLSearchParams(params).toString();
   return adminRequest(`/admin/payments${query ? `?${query}` : ""}`);
+}
+
+export async function confirmAdminPayment(paymentId) {
+  return adminRequest(`/admin/payments/${paymentId}/confirm`, { method: "POST" });
+}
+
+export async function rejectAdminPayment(paymentId) {
+  return adminRequest(`/admin/payments/${paymentId}/reject`, { method: "POST" });
 }
 
 export async function getAdminSettings() {

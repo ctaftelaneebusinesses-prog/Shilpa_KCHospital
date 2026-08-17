@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { useLanguage } from "../LanguageContext";
 import { useVoiceInput } from "../hooks/useVoiceInput";
 import {
-  createPaymentOrder,
+  bookWithManualPayment,
   getAppointment,
   getConsultationFee,
   getReasonOptions,
   getSlots,
   holdSlot,
-  verifyPayment,
 } from "../api";
 import SuccessModal from "./SuccessModal";
 
@@ -26,19 +26,19 @@ const initialForm = {
   message: "",
 };
 
-let razorpayScriptPromise = null;
-function loadRazorpayCheckout() {
-  if (window.Razorpay) return Promise.resolve(true);
-  if (!razorpayScriptPromise) {
-    razorpayScriptPromise = new Promise((resolve) => {
-      const script = document.createElement("script");
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
-  }
-  return razorpayScriptPromise;
+// Builds a standard UPI deep link (what every UPI QR encodes) so any UPI
+// app can scan/pay with the exact amount pre-filled - no payment gateway
+// involved, so no gateway fee either.
+function buildUpiLink({ upiId, upiPayeeName, amount, note }) {
+  if (!upiId) return "";
+  const params = [
+    `pa=${encodeURIComponent(upiId)}`,
+    `pn=${encodeURIComponent(upiPayeeName || "Clinic")}`,
+    `am=${encodeURIComponent(amount)}`,
+    "cu=INR",
+    `tn=${encodeURIComponent(note || "Appointment Payment")}`,
+  ];
+  return `upi://pay?${params.join("&")}`;
 }
 
 export default function Appointment() {
@@ -55,14 +55,20 @@ export default function Appointment() {
   const [submitting, setSubmitting] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
 
-  // step: "form" (select + patient details) -> "payment" (active hold,
-  // awaiting Razorpay) -> "confirmed" (payment verified)
+  // step: "form" (select + patient details) -> "payment" (scan QR + submit
+  // UPI reference - nothing is saved to the database yet at this point) ->
+  // "submitted" (booking + payment just created, awaiting manual admin
+  // verification) / "confirmed" (free booking, confirmed instantly)
   const [step, setStep] = useState("form");
-  const [hold, setHold] = useState(null); // { appointmentId, holdExpiresAt, consultationFee }
-  const [secondsLeft, setSecondsLeft] = useState(0);
+  // Holds the validated form details in memory only - no appointment row
+  // exists until handleSubmitPaymentProof succeeds, so an abandoned/unpaid
+  // booking never touches the database.
+  const [pendingBooking, setPendingBooking] = useState(null);
   const [confirmation, setConfirmation] = useState(null);
   const [isFreeBooking, setIsFreeBooking] = useState(false);
   const [currentFee, setCurrentFee] = useState(null); // null while unknown, then a number
+  const [upiInfo, setUpiInfo] = useState({ upiId: "", upiPayeeName: "" });
+  const [upiReference, setUpiReference] = useState("");
 
   const { supported: voiceSupported, listening, statusText, startListening } =
     useVoiceInput(language);
@@ -113,7 +119,10 @@ export default function Appointment() {
 
   useEffect(() => {
     getConsultationFee()
-      .then((data) => setCurrentFee(data.consultationFeeInr))
+      .then((data) => {
+        setCurrentFee(data.consultationFeeInr);
+        setUpiInfo({ upiId: data.upiId || "", upiPayeeName: data.upiPayeeName || "" });
+      })
       .catch(() => setCurrentFee(null));
   }, []);
 
@@ -163,28 +172,6 @@ export default function Appointment() {
     };
   }, [form.date]);
 
-  useEffect(() => {
-    if (step !== "payment" || !hold) return;
-    const tick = () => {
-      const remaining = Math.max(
-        0,
-        Math.round((new Date(hold.holdExpiresAt).getTime() - Date.now()) / 1000)
-      );
-      setSecondsLeft(remaining);
-      if (remaining === 0) {
-        setError(t("holdExpired"));
-        setStep("form");
-        setHold(null);
-        if (form.date) {
-          getSlots(form.date).then((data) => setSlots(data.slots || []));
-        }
-      }
-    };
-    tick();
-    const interval = setInterval(tick, 1000);
-    return () => clearInterval(interval);
-  }, [step, hold, form.date, t]);
-
   async function handleSubmit(event) {
     event.preventDefault();
     setError("");
@@ -207,18 +194,19 @@ export default function Appointment() {
       if (form.reasons.length) reasonParts.push(form.reasons.join(", "));
       if (form.notSure && form.message.trim()) reasonParts.push(`Other: ${form.message.trim()}`);
       const reason = reasonParts.join("\n");
-      const data = await holdSlot({
-        name: name.trim(),
-        phone: phone.trim(),
-        email: email.trim(),
-        date,
-        time,
-        reason,
-        language,
-      });
 
-      if (data.status === "confirmed") {
-        // Consultation fee is 0 - the backend confirms instantly, no payment needed.
+      if (currentFee === 0) {
+        // Free consultation - nothing to pay, so it's fine to save the
+        // booking immediately and confirm it.
+        const data = await holdSlot({
+          name: name.trim(),
+          phone: phone.trim(),
+          email: email.trim(),
+          date,
+          time,
+          reason,
+          language,
+        });
         const appointment = await getAppointment(data.appointmentId);
         setConfirmation(appointment);
         setIsFreeBooking(true);
@@ -226,10 +214,18 @@ export default function Appointment() {
         setModalOpen(true);
         setForm(initialForm);
       } else {
-        setHold({
-          appointmentId: data.appointmentId,
-          holdExpiresAt: data.holdExpiresAt,
-          consultationFee: data.consultationFee,
+        // Paid booking - nothing is written to the database yet. We only
+        // hold these details in memory until payment is actually made and
+        // the transaction reference is submitted (see handleSubmitPaymentProof).
+        setPendingBooking({
+          name: name.trim(),
+          phone: phone.trim(),
+          email: email.trim(),
+          date,
+          time,
+          reason,
+          language,
+          consultationFee: currentFee,
         });
         setStep("payment");
       }
@@ -246,52 +242,35 @@ export default function Appointment() {
     }
   }
 
-  async function handlePay() {
-    if (!hold) return;
+  async function handleSubmitPaymentProof(event) {
+    event.preventDefault();
+    if (!pendingBooking) return;
+    if (!upiReference.trim()) {
+      setError(t("errorUpiRef"));
+      return;
+    }
     setError("");
     setSubmitting(true);
 
     try {
-      const order = await createPaymentOrder(hold.appointmentId);
-      const scriptLoaded = await loadRazorpayCheckout();
-      if (!scriptLoaded) {
-        setError(t("errorServer"));
-        setSubmitting(false);
-        return;
-      }
-
-      const razorpay = new window.Razorpay({
-        key: order.keyId,
-        amount: order.amount,
-        currency: order.currency,
-        order_id: order.orderId,
-        name: "Dr. Shilpa | KC Hospital",
-        description: t("appointmentTitle"),
-        prefill: { name: form.name.trim(), contact: form.phone.trim(), email: form.email.trim() },
-        theme: { color: "#9f5276" },
-        handler: async (response) => {
-          try {
-            const result = await verifyPayment({
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-            });
-            setConfirmation(result.appointment);
-            setIsFreeBooking(false);
-            setStep("confirmed");
-            setModalOpen(true);
-            setForm(initialForm);
-          } catch (err) {
-            setError(err.message || t("errorServer"));
-          }
-        },
-        modal: {
-          ondismiss: () => setSubmitting(false),
-        },
+      await bookWithManualPayment({
+        ...pendingBooking,
+        upi_reference: upiReference.trim(),
       });
-      razorpay.open();
+      setStep("submitted");
+      setUpiReference("");
     } catch (err) {
+      // Most likely someone else booked this slot while we were on the
+      // payment screen (nothing reserves it until this point) - send the
+      // patient back to pick another slot rather than leaving them stuck.
       setError(err.message || t("errorServer"));
+      setStep("form");
+      setPendingBooking(null);
+      if (form.date) {
+        getSlots(form.date)
+          .then((data) => setSlots(data.slots || []))
+          .catch(() => {});
+      }
     } finally {
       setSubmitting(false);
     }
@@ -299,9 +278,10 @@ export default function Appointment() {
 
   function resetToForm() {
     setStep("form");
-    setHold(null);
+    setPendingBooking(null);
     setConfirmation(null);
     setIsFreeBooking(false);
+    setUpiReference("");
     setError("");
   }
 
@@ -540,7 +520,7 @@ export default function Appointment() {
             </form>
           )}
 
-          {step === "payment" && hold && (
+          {step === "payment" && pendingBooking && (
             <div>
               <div className="form-header">
                 <span className="form-icon">💳</span>
@@ -550,23 +530,70 @@ export default function Appointment() {
                 </div>
               </div>
 
-              <p className="body-text">
-                {t("holdCountdown")}: <strong>{Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, "0")}</strong>
-              </p>
+              {upiInfo.upiId ? (
+                <div className="upi-payment-box">
+                  <div className="upi-qr-wrap">
+                    <QRCodeSVG
+                      value={buildUpiLink({
+                        upiId: upiInfo.upiId,
+                        upiPayeeName: upiInfo.upiPayeeName,
+                        amount: pendingBooking.consultationFee,
+                        note: `Appointment ${pendingBooking.date} ${pendingBooking.time}`,
+                      })}
+                      size={200}
+                    />
+                  </div>
+                  <p className="body-text upi-amount">
+                    {t("payNow")} <strong>₹{pendingBooking.consultationFee}</strong> {t("upiIdLabel")}{" "}
+                    <strong>{upiInfo.upiId}</strong>
+                  </p>
+                  <p className="body-text upi-instructions">{t("qrInstructions")}</p>
 
-              {error && <p className="form-error">{error}</p>}
+                  <form onSubmit={handleSubmitPaymentProof}>
+                    <div className="form-group">
+                      <label>{t("upiRefLabel")}</label>
+                      <input
+                        type="text"
+                        placeholder={t("upiRefPlaceholder")}
+                        value={upiReference}
+                        onChange={(event) => setUpiReference(event.target.value)}
+                        required
+                      />
+                    </div>
 
-              <button type="button" className="whatsapp-submit" onClick={handlePay} disabled={submitting}>
-                <span className="whatsapp-symbol">₹</span>
-                <span>{submitting ? "..." : `${t("payNow")} ₹${hold.consultationFee}`}</span>
-                <span>→</span>
-              </button>
+                    {error && <p className="form-error">{error}</p>}
+
+                    <button type="submit" className="whatsapp-submit" disabled={submitting}>
+                      <span className="whatsapp-symbol">✓</span>
+                      <span>{submitting ? "..." : t("submitPaymentProof")}</span>
+                    </button>
+                  </form>
+                </div>
+              ) : (
+                <p className="form-error">{t("paymentUnavailable")}</p>
+              )}
 
               <p className="privacy-text">
                 <button type="button" onClick={resetToForm} className="link-btn">
                   {t("cancelAndPickAnother")}
                 </button>
               </p>
+            </div>
+          )}
+
+          {step === "submitted" && (
+            <div>
+              <div className="form-header">
+                <span className="form-icon">⏳</span>
+                <div>
+                  <h3>{t("paymentSubmittedTitle")}</h3>
+                  <p>{t("paymentSubmittedText")}</p>
+                </div>
+              </div>
+
+              <button type="button" className="whatsapp-submit" onClick={resetToForm}>
+                <span>{t("bookAnother")}</span>
+              </button>
             </div>
           )}
 

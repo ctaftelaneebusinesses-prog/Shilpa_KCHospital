@@ -1,12 +1,21 @@
 import json
+from datetime import date as date_cls
 from datetime import datetime, timezone
 
 import razorpay
 from flask import Blueprint, current_app, jsonify, request
 
+from booking import (
+    DATE_FULL_MESSAGE,
+    DATE_PATTERN,
+    PHONE_PATTERN,
+    SLOT_TAKEN_MESSAGE,
+    _is_date_full,
+    _is_slot_taken,
+)
 from notifications import notify_payment_success
 from settings import get_consultation_fee
-from slots import appointment_time_label
+from slots import TIME_SLOT_VALUES, appointment_time_label, expire_stale_holds, today_ist
 from supabase_client import get_supabase
 
 payments_bp = Blueprint("payments", __name__)
@@ -144,6 +153,96 @@ def create_order():
         ),
         200,
     )
+
+
+@payments_bp.post("/manual/book")
+def book_with_manual_payment():
+    """Creates the appointment and records the UPI transaction reference in
+    one atomic step, only after the patient has already paid via the
+    clinic's own (gateway-free) UPI QR. No appointment/patient row is written
+    until this point - unlike /booking/hold, nothing reserves the slot ahead
+    of payment, so this never confirms the appointment itself either; an
+    admin must verify the reference against the bank statement and confirm
+    it from Admin -> Payment History."""
+    payload = request.get_json(silent=True) or {}
+
+    required = ["name", "phone", "date", "time", "upi_reference"]
+    missing = [field for field in required if not str(payload.get(field, "")).strip()]
+    if missing:
+        return jsonify({"error": f"Missing required fields: {', '.join(missing)}"}), 400
+
+    name = str(payload["name"]).strip()
+    phone = str(payload["phone"]).strip()
+    email = str(payload.get("email", "")).strip() or None
+    date_str = str(payload["date"]).strip()
+    time_str = str(payload["time"]).strip()
+    reason = str(payload.get("reason", "")).strip() or None
+    language = payload.get("language", "en")
+    upi_reference = str(payload["upi_reference"]).strip()
+
+    if not PHONE_PATTERN.match(phone):
+        return jsonify({"error": "Please enter a valid 10-digit mobile number."}), 400
+    if not DATE_PATTERN.match(date_str):
+        return jsonify({"error": "A valid date (YYYY-MM-DD) is required."}), 400
+    if time_str not in TIME_SLOT_VALUES:
+        return jsonify({"error": "Please choose a valid time slot."}), 400
+
+    try:
+        requested = date_cls.fromisoformat(date_str)
+    except ValueError:
+        return jsonify({"error": "A valid date (YYYY-MM-DD) is required."}), 400
+    if requested < today_ist():
+        return jsonify({"error": "Cannot book an appointment in the past."}), 400
+
+    fee = get_consultation_fee()
+    if fee <= 0:
+        return jsonify({"error": "This appointment does not require payment."}), 400
+
+    expire_stale_holds()
+
+    supabase = get_supabase()
+    try:
+        result = supabase.rpc(
+            "book_appointment",
+            {
+                "p_name": name,
+                "p_phone": phone,
+                "p_email": email,
+                "p_date": date_str,
+                "p_time": time_str,
+                "p_reason": reason,
+                "p_language": language,
+                "p_status": "payment_pending",
+                "p_hold_expires_at": None,
+            },
+        ).execute()
+    except Exception as error:  # noqa: BLE001 - postgrest raises a generic APIError
+        if _is_slot_taken(error):
+            return jsonify({"error": SLOT_TAKEN_MESSAGE}), 409
+        if _is_date_full(error):
+            return jsonify({"error": DATE_FULL_MESSAGE}), 409
+        current_app.logger.exception("Failed to create appointment for manual UPI payment")
+        return jsonify({"error": "Could not create this booking. Please try again."}), 500
+
+    appointment = result.data
+
+    inserted = (
+        supabase.table("payments")
+        .insert(
+            {
+                "appointment_id": appointment["id"],
+                "payment_method": "manual_upi",
+                "upi_reference": upi_reference,
+                "amount": fee,
+                "currency": "INR",
+                "status": "pending_verification",
+            }
+        )
+        .execute()
+    )
+    payment = inserted.data[0]
+
+    return jsonify({"status": payment["status"], "appointmentId": appointment["id"]}), 201
 
 
 @payments_bp.post("/verify")

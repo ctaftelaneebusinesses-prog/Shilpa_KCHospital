@@ -5,6 +5,7 @@ from datetime import date, datetime, timedelta, timezone
 from flask import Blueprint, current_app, jsonify, request
 
 from auth import require_admin
+from payments import _appointment_payment_summary, _confirm_appointment, _notify_if_confirmed
 from settings import get_consultation_fee, set_consultation_fee
 from slots import CAPACITY_STATUSES, DAILY_CAPACITY, appointment_time_label, expire_stale_holds, today_ist
 from supabase_client import get_supabase
@@ -429,6 +430,58 @@ def payment_history():
 
     result = query.order("created_at", desc=True).execute()
     return jsonify({"payments": result.data}), 200
+
+
+@admin_bp.post("/payments/<payment_id>/confirm")
+@require_admin
+def confirm_manual_payment(payment_id):
+    """Confirms a manual UPI payment after the admin has checked the
+    patient-submitted UPI reference against the bank/UPI statement, then
+    fires the same confirmation notifications as a Razorpay payment."""
+    supabase = get_supabase()
+    result = supabase.table("payments").select("*").eq("id", payment_id).limit(1).execute()
+    if not result.data:
+        return jsonify({"error": "Payment not found."}), 404
+    payment = result.data[0]
+    if payment["status"] != "pending_verification":
+        return jsonify({"error": "Only a payment awaiting verification can be confirmed."}), 400
+
+    updated = (
+        supabase.table("payments")
+        .update({"status": "successful"})
+        .eq("id", payment_id)
+        .eq("status", "pending_verification")
+        .execute()
+    )
+    confirmed = False
+    if updated.data:
+        confirmed = _confirm_appointment(supabase, payment["appointment_id"])
+    _notify_if_confirmed(supabase, payment["appointment_id"], confirmed)
+
+    return jsonify(_appointment_payment_summary(supabase, payment["appointment_id"])), 200
+
+
+@admin_bp.post("/payments/<payment_id>/reject")
+@require_admin
+def reject_manual_payment(payment_id):
+    """Rejects a manual UPI payment whose reference didn't check out (not
+    found in the bank statement, wrong amount, etc.) and frees the slot."""
+    supabase = get_supabase()
+    result = supabase.table("payments").select("*").eq("id", payment_id).limit(1).execute()
+    if not result.data:
+        return jsonify({"error": "Payment not found."}), 404
+    payment = result.data[0]
+    if payment["status"] != "pending_verification":
+        return jsonify({"error": "Only a payment awaiting verification can be rejected."}), 400
+
+    supabase.table("payments").update({"status": "failed"}).eq("id", payment_id).eq(
+        "status", "pending_verification"
+    ).execute()
+    supabase.table("appointments").update(
+        {"status": "cancelled", "cancelled_reason": "manual_payment_rejected"}
+    ).eq("id", payment["appointment_id"]).eq("status", "payment_pending").execute()
+
+    return jsonify({"status": "rejected"}), 200
 
 
 @admin_bp.get("/settings")

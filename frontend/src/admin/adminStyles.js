@@ -207,6 +207,7 @@ const css = `
 .status-cancelled { background: #fbe6e6; color: #a83232; }
 .status-no_show { background: #ececec; color: #555; }
 .status-pending { background: #fff4dd; color: #92660a; }
+.status-pending_verification { background: #fff4dd; color: #92660a; }
 .status-successful { background: #e4f4ec; color: #1f7a4f; }
 .status-failed { background: #fbe6e6; color: #a83232; }
 .status-refunded { background: #ececec; color: #555; }

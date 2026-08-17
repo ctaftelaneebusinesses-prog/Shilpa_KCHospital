@@ -219,6 +219,11 @@ button, input, select, textarea { font-family: inherit; }
 .whatsapp-symbol { font-size: 18px; }
 .privacy-text { text-align: center; color: #998c93; font-size: 10px; margin-top: 12px; }
 .form-error { color: #c0392b; font-size: 12px; margin: -8px 0 14px; }
+.upi-payment-box { background: #fcf3f7; border: 1px solid #f0dfe7; padding: 18px; border-radius: 15px; margin: 4px 0 18px; text-align: center; }
+.upi-qr-wrap { display: inline-block; background: white; padding: 12px; border-radius: 12px; margin-bottom: 12px; }
+.upi-amount { font-size: 15px; margin-bottom: 8px; }
+.upi-instructions { font-size: 12px; color: #897b83; margin-bottom: 14px; text-align: left; }
+.upi-payment-box .form-group { text-align: left; }
 .date-availability-note { font-size: 12px; font-weight: 600; margin-top: 7px; color: #2f8a4e; }
 .date-availability-note.full { color: #c0392b; }
 .time-slot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 8px; }
