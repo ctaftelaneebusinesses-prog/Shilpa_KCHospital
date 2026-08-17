@@ -377,7 +377,7 @@ export default function Appointment() {
                 <label>{t("cityLabel")}</label>
                 <input
                   type="text"
-                  placeholder="Kuppam"
+                  placeholder={t("cityPlaceholder")}
                   value={form.city}
                   onChange={updateField("city")}
                   required
