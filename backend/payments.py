@@ -20,6 +20,16 @@ from supabase_client import get_supabase
 
 payments_bp = Blueprint("payments", __name__)
 
+DUPLICATE_UPI_REFERENCE_MESSAGE = (
+    "This transaction ID has already been used for another booking. "
+    "Please check the reference number from your UPI app."
+)
+
+
+def _is_duplicate_upi_reference(error: Exception) -> bool:
+    message = str(error)
+    return "payments_unique_manual_upi_reference" in message or "23505" in message
+
 
 def _razorpay_client():
     return razorpay.Client(
@@ -198,9 +208,23 @@ def book_with_manual_payment():
     if fee <= 0:
         return jsonify({"error": "This appointment does not require payment."}), 400
 
+    supabase = get_supabase()
+
+    # A transaction reference identifies one real payment - it must never be
+    # claimed against more than one booking.
+    duplicate = (
+        supabase.table("payments")
+        .select("id")
+        .eq("payment_method", "manual_upi")
+        .eq("upi_reference", upi_reference)
+        .limit(1)
+        .execute()
+    )
+    if duplicate.data:
+        return jsonify({"error": DUPLICATE_UPI_REFERENCE_MESSAGE}), 409
+
     expire_stale_holds()
 
-    supabase = get_supabase()
     try:
         result = supabase.rpc(
             "book_appointment",
@@ -226,20 +250,33 @@ def book_with_manual_payment():
 
     appointment = result.data
 
-    inserted = (
-        supabase.table("payments")
-        .insert(
-            {
-                "appointment_id": appointment["id"],
-                "payment_method": "manual_upi",
-                "upi_reference": upi_reference,
-                "amount": fee,
-                "currency": "INR",
-                "status": "pending_verification",
-            }
+    try:
+        inserted = (
+            supabase.table("payments")
+            .insert(
+                {
+                    "appointment_id": appointment["id"],
+                    "payment_method": "manual_upi",
+                    "upi_reference": upi_reference,
+                    "amount": fee,
+                    "currency": "INR",
+                    "status": "pending_verification",
+                }
+            )
+            .execute()
         )
-        .execute()
-    )
+    except Exception as error:  # noqa: BLE001 - postgrest raises a generic APIError
+        # Someone else's request claimed this exact reference in the tiny
+        # window between the check above and this insert - free the slot we
+        # just reserved rather than leaving an orphaned appointment behind.
+        supabase.table("appointments").update(
+            {"status": "cancelled", "cancelled_reason": "duplicate_upi_reference"}
+        ).eq("id", appointment["id"]).execute()
+        if _is_duplicate_upi_reference(error):
+            return jsonify({"error": DUPLICATE_UPI_REFERENCE_MESSAGE}), 409
+        current_app.logger.exception("Failed to record manual UPI payment")
+        return jsonify({"error": "Could not record this payment. Please try again."}), 500
+
     payment = inserted.data[0]
 
     return jsonify({"status": payment["status"], "appointmentId": appointment["id"]}), 201
