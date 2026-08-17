@@ -275,7 +275,8 @@ button, input, select, textarea { font-family: inherit; }
 .location-content { padding: 55px; }
 .location-content h2 { font-size: 43px; }
 .address { display: flex; gap: 15px; margin: 30px 0; }
-.address-icon { width: 45px; height: 45px; background: #f7e8ef; color: #9f5276; display: grid; place-items: center; border-radius: 14px; }
+.address-icon { width: 45px; height: 45px; background: #f7e8ef; color: #9f5276; display: grid; place-items: center; border-radius: 14px; overflow: hidden; }
+.address-icon img { width: 100%; height: 100%; object-fit: contain; padding: 6px; }
 .address strong { font-size: 14px; }
 .address p { color: #7c7077; line-height: 1.7; font-size: 13px; margin-top: 4px; }
 .contact-actions { display: flex; gap: 10px; }
@@ -299,7 +300,8 @@ button, input, select, textarea { font-family: inherit; }
 footer { background: #2f2630; color: white; padding: 35px 0; }
 .footer-content { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
 .footer-brand { display: flex; align-items: center; gap: 10px; }
-.footer-brand .logo-icon { background: #9f5276; width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; font-size: 20px; color: white; }
+.footer-brand .logo-icon { background: white; width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; overflow: hidden; }
+.footer-brand .logo-icon img { width: 100%; height: 100%; object-fit: contain; padding: 4px; }
 .footer-brand strong { display: block; font-family: "Playfair Display", serif; }
 .footer-brand span { color: #c7a7b6; font-size: 10px; }
 footer p { color: #b7aab1; font-size: 11px; }

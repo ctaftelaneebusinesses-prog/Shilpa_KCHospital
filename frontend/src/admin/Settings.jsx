@@ -140,7 +140,7 @@ export default function Settings() {
         <h3 style={{ marginBottom: 4 }}>Reason Checklist</h3>
         <p style={{ color: "#8a7d85", fontSize: 14, marginBottom: 18 }}>
           Patients pick from these as checkboxes when booking, instead of typing a reason.
-          New options are added to the end of the list. A fixed "Not listed / Not sure"
+          New options are added to the end of the list. A fixed "Other / Describe your issue"
           checkbox always stays last on the booking page and isn't managed here.
         </p>
 

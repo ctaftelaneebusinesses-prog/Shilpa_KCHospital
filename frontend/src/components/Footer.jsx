@@ -1,11 +1,14 @@
 import craftlaneeLogo from "../assets/craftlanee-logo.png";
+import logo from "../assets/logo.png";
 
 export default function Footer() {
   return (
     <footer>
       <div className="container footer-content">
         <div className="footer-brand">
-          <div className="logo-icon">+</div>
+          <div className="logo-icon">
+            <img src={logo} alt="KC Hospital" />
+          </div>
           <div>
             <strong>KC Hospital</strong>
             <span>Women's Care</span>

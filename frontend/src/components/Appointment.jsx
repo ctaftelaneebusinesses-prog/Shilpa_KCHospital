@@ -106,6 +106,7 @@ export default function Appointment() {
 
   function toggleNotSure() {
     setForm((prev) => ({ ...prev, notSure: !prev.notSure }));
+    setReasonDropdownOpen(false);
   }
 
   function handleVoiceClick() {

@@ -1,4 +1,5 @@
 import { useLanguage } from "../LanguageContext";
+import logo from "../assets/logo.png";
 
 export default function Location() {
   const { t } = useLanguage();
@@ -12,7 +13,9 @@ export default function Location() {
             <h2>{t("locationTitle")}</h2>
 
             <div className="address">
-              <span className="address-icon">⌖</span>
+              <span className="address-icon">
+                <img src={logo} alt="KC Hospital" />
+              </span>
               <div>
                 <strong>KC Hospital</strong>
                 <p>
