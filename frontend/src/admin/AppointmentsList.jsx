@@ -1,23 +1,15 @@
 import { useEffect, useState } from "react";
-import {
-  deleteAdminAppointment,
-  getAdminAppointmentDetail,
-  getAdminAppointments,
-  updateAdminAppointmentStatus,
-} from "../api";
-import { formatDate, formatDateTime, formatINR, formatTime } from "./format";
+import { getAdminAppointments } from "../api";
+import AppointmentDetail from "./AppointmentDetail";
+import { formatDate, formatDateTime, formatTime } from "./format";
 
 const STATUSES = ["payment_pending", "confirmed", "completed", "cancelled", "no_show"];
-// Matches the backend's DELETABLE_STATUSES (admin.py) - only a resolved
-// appointment can be archived, never an upcoming/paid or in-progress one.
-const DELETABLE_STATUSES = new Set(["completed", "cancelled", "no_show"]);
 
 export default function AppointmentsList() {
   const [appointments, setAppointments] = useState([]);
   const [filters, setFilters] = useState({ date: "", status: "", q: "" });
   const [error, setError] = useState("");
-  const [detail, setDetail] = useState(null);
-  const [actionError, setActionError] = useState("");
+  const [detailId, setDetailId] = useState(null);
 
   function load() {
     const params = {};
@@ -37,43 +29,6 @@ export default function AppointmentsList() {
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
-
-  function openDetail(id) {
-    setActionError("");
-    getAdminAppointmentDetail(id)
-      .then(setDetail)
-      .catch((err) => setActionError(err.message || "Failed to load details."));
-  }
-
-  async function updateStatus(status) {
-    if (!detail) return;
-    setActionError("");
-    try {
-      await updateAdminAppointmentStatus(detail.id, status);
-      const refreshed = await getAdminAppointmentDetail(detail.id);
-      setDetail(refreshed);
-      load();
-    } catch (err) {
-      setActionError(err.message || "Failed to update appointment.");
-    }
-  }
-
-  async function handleDelete() {
-    if (!detail) return;
-    const confirmed = window.confirm(
-      `Delete this appointment for ${detail.patient_name}? It will be archived out of the lists, but its payment/revenue record is kept.`
-    );
-    if (!confirmed) return;
-
-    setActionError("");
-    try {
-      await deleteAdminAppointment(detail.id);
-      setDetail(null);
-      load();
-    } catch (err) {
-      setActionError(err.message || "Failed to delete appointment.");
-    }
-  }
 
   return (
     <>
@@ -124,7 +79,7 @@ export default function AppointmentsList() {
             </thead>
             <tbody>
               {appointments.map((appointment, index) => (
-                <tr key={appointment.id} onClick={() => openDetail(appointment.id)}>
+                <tr key={appointment.id} onClick={() => setDetailId(appointment.id)}>
                   <td>{index + 1}</td>
                   <td>{appointment.patient_name}</td>
                   <td>{appointment.patient_phone}</td>
@@ -141,102 +96,12 @@ export default function AppointmentsList() {
         </div>
       </div>
 
-      {detail && (
-        <div className="admin-card">
-          <h3 style={{ marginBottom: 14 }}>Appointment Detail</h3>
-          {actionError && <p className="admin-error">{actionError}</p>}
-          <dl className="admin-detail-grid">
-            <div>
-              <dt>Patient</dt>
-              <dd>{detail.patient_name}</dd>
-            </div>
-            <div>
-              <dt>Phone</dt>
-              <dd>{detail.patient_phone}</dd>
-            </div>
-            <div>
-              <dt>Email</dt>
-              <dd>{detail.patient_email || "-"}</dd>
-            </div>
-            <div>
-              <dt>Date</dt>
-              <dd>{formatDate(detail.appointment_date)}</dd>
-            </div>
-            <div>
-              <dt>Time</dt>
-              <dd>{formatTime(detail.appointment_time)}</dd>
-            </div>
-            <div>
-              <dt>Booked On</dt>
-              <dd>{formatDateTime(detail.created_at)}</dd>
-            </div>
-            <div>
-              <dt>Status</dt>
-              <dd>
-                <span className={`status-badge status-${detail.status}`}>{detail.status}</span>
-              </dd>
-            </div>
-            <div>
-              <dt>Reason / Comments</dt>
-              <dd>{detail.reason || "-"}</dd>
-            </div>
-            <div>
-              <dt>Payment Status</dt>
-              <dd>{detail.payments?.[0]?.status || "-"}</dd>
-            </div>
-            <div>
-              <dt>Amount</dt>
-              <dd>
-                {detail.payments?.[0]?.amount != null ? formatINR(detail.payments[0].amount) : "-"}
-              </dd>
-            </div>
-            <div>
-              <dt>Transaction ID</dt>
-              <dd>{detail.payments?.[0]?.razorpay_payment_id || "-"}</dd>
-            </div>
-            <div>
-              <dt>UPI Reference</dt>
-              <dd>{detail.payments?.[0]?.upi_reference || "-"}</dd>
-            </div>
-          </dl>
-
-          {detail.payments?.[0]?.status === "pending_verification" && (
-            <p className="body-text" style={{ marginTop: 12 }}>
-              This payment is awaiting manual verification — confirm or reject it from{" "}
-              <strong>Payment History</strong> after checking the UPI reference against your bank/UPI app.
-            </p>
-          )}
-
-          {detail.status === "confirmed" && (
-            <div className="admin-toolbar" style={{ marginTop: 18 }}>
-              <button className="admin-btn admin-btn-primary" onClick={() => updateStatus("completed")}>
-                Mark Completed
-              </button>
-              <button className="admin-btn" onClick={() => updateStatus("no_show")}>
-                Mark No-Show
-              </button>
-              <button className="admin-btn admin-btn-danger" onClick={() => updateStatus("cancelled")}>
-                Cancel Appointment
-              </button>
-            </div>
-          )}
-
-          {detail.status === "no_show" && (
-            <div className="admin-toolbar" style={{ marginTop: 18 }}>
-              <button className="admin-btn admin-btn-primary" onClick={() => updateStatus("completed")}>
-                Mark Completed
-              </button>
-            </div>
-          )}
-
-          {DELETABLE_STATUSES.has(detail.status) && (
-            <div className="admin-toolbar" style={{ marginTop: 18 }}>
-              <button className="admin-btn admin-btn-danger" onClick={handleDelete}>
-                Delete Appointment
-              </button>
-            </div>
-          )}
-        </div>
+      {detailId && (
+        <AppointmentDetail
+          appointmentId={detailId}
+          onClose={() => setDetailId(null)}
+          onChanged={load}
+        />
       )}
     </>
   );

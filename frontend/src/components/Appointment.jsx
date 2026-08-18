@@ -550,6 +550,8 @@ export default function Appointment() {
                   </p>
                   <p className="body-text upi-instructions">{t("qrInstructions")}</p>
 
+                  <p className="payment-screenshot-note">{t("paymentScreenshotNote")}</p>
+
                   <form onSubmit={handleSubmitPaymentProof}>
                     <div className="form-group">
                       <label>{t("upiRefLabel")}</label>
@@ -592,8 +594,23 @@ export default function Appointment() {
                 </div>
               </div>
 
-              <button type="button" className="whatsapp-submit" onClick={resetToForm}>
-                <span>{t("bookAnother")}</span>
+              <p className="payment-screenshot-note">{t("paymentScreenshotNote")}</p>
+
+              {form.email.trim() && (
+                <p className="payment-email-note">{t("paymentEmailNote")}</p>
+              )}
+
+              <a
+                href="https://wa.me/917207910548"
+                target="_blank"
+                rel="noreferrer"
+                className="whatsapp-submit whatsapp-share-link"
+              >
+                <span>{t("shareOnWhatsapp")}</span>
+              </a>
+
+              <button type="button" className="link-btn" onClick={resetToForm}>
+                {t("bookAnother")}
               </button>
             </div>
           )}

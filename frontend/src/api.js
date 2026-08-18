@@ -110,6 +110,13 @@ export async function updateAdminAppointmentStatus(id, status) {
   });
 }
 
+export async function updateAdminAppointmentDetails(id, payload) {
+  return adminRequest(`/admin/appointments/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function deleteAdminAppointment(id) {
   return adminRequest(`/admin/appointments/${id}`, { method: "DELETE" });
 }

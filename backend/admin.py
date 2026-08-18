@@ -5,9 +5,17 @@ from datetime import date, datetime, timedelta, timezone
 from flask import Blueprint, current_app, jsonify, request
 
 from auth import require_admin
+from booking import DATE_PATTERN, PHONE_PATTERN
 from payments import _appointment_payment_summary, _confirm_appointment, _notify_if_confirmed
 from settings import get_consultation_fee, set_consultation_fee
-from slots import CAPACITY_STATUSES, DAILY_CAPACITY, appointment_time_label, expire_stale_holds, today_ist
+from slots import (
+    CAPACITY_STATUSES,
+    DAILY_CAPACITY,
+    TIME_SLOT_VALUES,
+    appointment_time_label,
+    expire_stale_holds,
+    today_ist,
+)
 from supabase_client import get_supabase
 from translate import translate_label
 
@@ -330,6 +338,94 @@ def appointment_detail(appointment_id):
         appointment.get("payments") or [], key=lambda p: p["created_at"], reverse=True
     )
     return jsonify(appointment), 200
+
+
+@admin_bp.patch("/appointments/<appointment_id>")
+@require_admin
+def update_appointment_details(appointment_id):
+    """Lets the admin correct patient details (mistyped name/phone/email) or
+    move an appointment to a different date/time - e.g. rebooking a returning
+    patient onto tomorrow instead of creating a duplicate row from scratch."""
+    payload = request.get_json(silent=True) or {}
+
+    supabase = get_supabase()
+    existing = (
+        supabase.table("appointments")
+        .select("*")
+        .eq("id", appointment_id)
+        .is_("deleted_at", "null")
+        .limit(1)
+        .execute()
+    )
+    if not existing.data:
+        return jsonify({"error": "Appointment not found."}), 404
+    current = existing.data[0]
+
+    update_fields = {}
+
+    if "patient_name" in payload:
+        name = str(payload["patient_name"]).strip()
+        if not name:
+            return jsonify({"error": "Patient name cannot be empty."}), 400
+        update_fields["patient_name"] = name
+
+    if "patient_phone" in payload:
+        phone = str(payload["patient_phone"]).strip()
+        if not PHONE_PATTERN.match(phone):
+            return jsonify({"error": "Please enter a valid 10-digit mobile number."}), 400
+        update_fields["patient_phone"] = phone
+
+    if "patient_email" in payload:
+        email = str(payload["patient_email"]).strip()
+        update_fields["patient_email"] = email or None
+
+    if "appointment_date" in payload or "appointment_time" in payload:
+        date_str = str(payload.get("appointment_date") or current["appointment_date"]).strip()
+        time_str = str(payload.get("appointment_time") or (current["appointment_time"] or "")[:5]).strip()
+
+        if not DATE_PATTERN.match(date_str):
+            return jsonify({"error": "A valid date (YYYY-MM-DD) is required."}), 400
+        if time_str not in TIME_SLOT_VALUES:
+            return jsonify({"error": "Please choose a valid time slot."}), 400
+
+        changed_slot = date_str != current["appointment_date"] or time_str != (current["appointment_time"] or "")[:5]
+        # Only an active (slot-occupying) appointment needs a conflict check -
+        # a cancelled/no-show/completed row moving elsewhere can't collide
+        # with anything since it no longer holds a slot either way.
+        if changed_slot and current["status"] in CAPACITY_STATUSES:
+            conflict = (
+                supabase.table("appointments")
+                .select("id")
+                .eq("appointment_date", date_str)
+                .eq("appointment_time", time_str)
+                .in_("status", CAPACITY_STATUSES)
+                .is_("deleted_at", "null")
+                .neq("id", appointment_id)
+                .limit(1)
+                .execute()
+            )
+            if conflict.data:
+                return jsonify({"error": "That date/time slot is already taken by another appointment."}), 409
+
+        update_fields["appointment_date"] = date_str
+        update_fields["appointment_time"] = time_str
+
+    if not update_fields:
+        return jsonify({"error": "No fields to update."}), 400
+
+    result = (
+        supabase.table("appointments")
+        .update(update_fields)
+        .eq("id", appointment_id)
+        .is_("deleted_at", "null")
+        .execute()
+    )
+    if not result.data:
+        return jsonify({"error": "Failed to update appointment."}), 500
+
+    updated = result.data[0]
+    updated["time_label"] = appointment_time_label(updated)
+    return jsonify(updated), 200
 
 
 @admin_bp.post("/appointments/<appointment_id>/status")

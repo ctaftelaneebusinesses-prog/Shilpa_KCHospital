@@ -217,6 +217,16 @@ button, input, select, textarea { font-family: inherit; }
 .whatsapp-submit:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(44,170,111,.25); }
 .whatsapp-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 .whatsapp-symbol { font-size: 18px; }
+.payment-screenshot-note {
+  background: #f0faf4; border: 1px solid #cdecda; color: #2f6b4a; font-size: 12.5px;
+  line-height: 1.6; padding: 12px 15px; border-radius: 12px; margin-bottom: 14px;
+}
+.payment-email-note {
+  background: #fcf3f7; border: 1px solid #f0dfe7; color: #7c4f65; font-size: 12.5px;
+  line-height: 1.6; padding: 12px 15px; border-radius: 12px; margin-bottom: 14px;
+}
+.whatsapp-share-link { margin-bottom: 12px; text-decoration: none; }
+.whatsapp-submit + .link-btn { display: block; margin: 12px auto 0; text-align: center; }
 .privacy-text { text-align: center; color: #998c93; font-size: 10px; margin-top: 12px; }
 .form-error { color: #c0392b; font-size: 12px; margin: -8px 0 14px; }
 .upi-payment-box { background: #fcf3f7; border: 1px solid #f0dfe7; padding: 18px; border-radius: 15px; margin: 4px 0 18px; text-align: center; }
