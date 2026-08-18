@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   deleteAdminAppointment,
   getAdminAppointmentDetail,
+  getSlots,
   updateAdminAppointmentDetails,
   updateAdminAppointmentStatus,
 } from "../api";
@@ -33,6 +34,10 @@ export default function AppointmentDetail({ appointmentId, onChanged, onDeleted 
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(null);
+  // value -> available (true/false). Empty/missing means "couldn't check"
+  // (e.g. a past date) - the dropdown then falls back to allowing everything
+  // rather than blocking the admin from saving a historical correction.
+  const [slotAvailability, setSlotAvailability] = useState({});
 
   function load() {
     setError("");
@@ -59,6 +64,22 @@ export default function AppointmentDetail({ appointmentId, onChanged, onDeleted 
     setError("");
     setEditing(true);
   }
+
+  useEffect(() => {
+    if (!editing || !form?.appointment_date) return;
+    getSlots(form.appointment_date)
+      .then((data) => {
+        const map = {};
+        data.slots.forEach((slot) => {
+          map[slot.value] = slot.available;
+        });
+        setSlotAvailability(map);
+      })
+      // A past date (or any lookup failure) can't be checked - fall back to
+      // allowing every slot rather than blocking a historical correction.
+      .catch(() => setSlotAvailability({}));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editing, form?.appointment_date]);
 
   async function saveEdit(event) {
     event.preventDefault();
@@ -172,7 +193,17 @@ export default function AppointmentDetail({ appointmentId, onChanged, onDeleted 
               className="admin-input"
               type="date"
               value={form.appointment_date}
-              onChange={(event) => setForm((prev) => ({ ...prev, appointment_date: event.target.value }))}
+              onChange={(event) => {
+                const newDate = event.target.value;
+                setForm((prev) => ({
+                  ...prev,
+                  appointment_date: newDate,
+                  // Reset the time whenever the date changes (unless it's
+                  // being changed back to the original date/time) so a slot
+                  // that's taken on the new date can never be submitted silently.
+                  appointment_time: newDate === detail.appointment_date ? prev.appointment_time : "",
+                }));
+              }}
               required
             />
           </div>
@@ -185,11 +216,21 @@ export default function AppointmentDetail({ appointmentId, onChanged, onDeleted 
               required
             >
               <option value="">Select a time</option>
-              {TIME_SLOTS.map((slot) => (
-                <option key={slot.value} value={slot.value}>
-                  {slot.label}
-                </option>
-              ))}
+              {TIME_SLOTS.map((slot) => {
+                // The appointment's own current slot shows as "taken" by the
+                // public availability check (it's counted as its own booking) -
+                // it must still be selectable when the date hasn't changed.
+                const isCurrentSlot =
+                  form.appointment_date === detail.appointment_date &&
+                  slot.value === (detail.appointment_time || "").slice(0, 5);
+                const taken = slotAvailability[slot.value] === false && !isCurrentSlot;
+                return (
+                  <option key={slot.value} value={slot.value} disabled={taken}>
+                    {slot.label}
+                    {taken ? " (unavailable)" : ""}
+                  </option>
+                );
+              })}
             </select>
           </div>
 
