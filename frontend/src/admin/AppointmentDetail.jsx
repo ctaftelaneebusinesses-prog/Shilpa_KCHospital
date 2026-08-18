@@ -27,7 +27,7 @@ function buildTimeSlots() {
 }
 const TIME_SLOTS = buildTimeSlots();
 
-export default function AppointmentDetail({ appointmentId, onClose, onChanged }) {
+export default function AppointmentDetail({ appointmentId, onChanged, onDeleted }) {
   const [detail, setDetail] = useState(null);
   const [error, setError] = useState("");
   const [editing, setEditing] = useState(false);
@@ -99,7 +99,7 @@ export default function AppointmentDetail({ appointmentId, onClose, onChanged })
     try {
       await deleteAdminAppointment(detail.id);
       onChanged?.();
-      onClose?.();
+      onDeleted?.();
     } catch (err) {
       setError(err.message || "Failed to delete appointment.");
     }
@@ -126,18 +126,11 @@ export default function AppointmentDetail({ appointmentId, onClose, onChanged })
         }}
       >
         <h3 style={{ margin: 0 }}>Appointment Detail</h3>
-        <div className="admin-toolbar" style={{ margin: 0, flexWrap: "nowrap" }}>
-          {!editing && (
-            <button className="admin-btn" onClick={startEditing}>
-              Edit Details
-            </button>
-          )}
-          {onClose && (
-            <button className="admin-btn" onClick={onClose}>
-              Close
-            </button>
-          )}
-        </div>
+        {!editing && (
+          <button className="admin-btn" onClick={startEditing}>
+            Edit Details
+          </button>
+        )}
       </div>
 
       {error && <p className="admin-error">{error}</p>}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { confirmAdminPayment, getAdminPayments, rejectAdminPayment } from "../api";
-import AppointmentDetail from "./AppointmentDetail";
 import { formatDate, formatDateTime, formatINR } from "./format";
 
 const STATUSES = ["pending", "pending_verification", "successful", "failed", "refunded"];
@@ -11,7 +11,7 @@ export default function PaymentsHistory() {
   const [error, setError] = useState("");
   const [actionError, setActionError] = useState("");
   const [actioningId, setActioningId] = useState(null);
-  const [detailId, setDetailId] = useState(null);
+  const navigate = useNavigate();
 
   function load() {
     const params = {};
@@ -115,7 +115,7 @@ export default function PaymentsHistory() {
             </thead>
             <tbody>
               {payments.map((payment, index) => (
-                <tr key={payment.id} onClick={() => setDetailId(payment.appointment_id)}>
+                <tr key={payment.id} onClick={() => navigate(`/admin/appointments/${payment.appointment_id}`)}>
                   <td>{index + 1}</td>
                   <td>{payment.appointments?.patient_name}</td>
                   <td>{formatDate(payment.appointments?.appointment_date)}</td>
@@ -152,14 +152,6 @@ export default function PaymentsHistory() {
           </table>
         </div>
       </div>
-
-      {detailId && (
-        <AppointmentDetail
-          appointmentId={detailId}
-          onClose={() => setDetailId(null)}
-          onChanged={load}
-        />
-      )}
     </>
   );
 }

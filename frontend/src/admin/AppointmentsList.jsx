@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getAdminAppointments } from "../api";
-import AppointmentDetail from "./AppointmentDetail";
 import { formatDate, formatDateTime, formatTime } from "./format";
 
 const STATUSES = ["payment_pending", "confirmed", "completed", "cancelled", "no_show"];
@@ -9,7 +9,7 @@ export default function AppointmentsList() {
   const [appointments, setAppointments] = useState([]);
   const [filters, setFilters] = useState({ date: "", status: "", q: "" });
   const [error, setError] = useState("");
-  const [detailId, setDetailId] = useState(null);
+  const navigate = useNavigate();
 
   function load() {
     const params = {};
@@ -79,7 +79,7 @@ export default function AppointmentsList() {
             </thead>
             <tbody>
               {appointments.map((appointment, index) => (
-                <tr key={appointment.id} onClick={() => setDetailId(appointment.id)}>
+                <tr key={appointment.id} onClick={() => navigate(`/admin/appointments/${appointment.id}`)}>
                   <td>{index + 1}</td>
                   <td>{appointment.patient_name}</td>
                   <td>{appointment.patient_phone}</td>
@@ -95,14 +95,6 @@ export default function AppointmentsList() {
           </table>
         </div>
       </div>
-
-      {detailId && (
-        <AppointmentDetail
-          appointmentId={detailId}
-          onClose={() => setDetailId(null)}
-          onChanged={load}
-        />
-      )}
     </>
   );
 }

@@ -164,6 +164,11 @@ const css = `
 .admin-schedule-card { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
 .admin-schedule-card h3 { font-size: 15px; font-weight: 700; margin: 0 0 2px; flex-basis: 100%; }
 .admin-hint { font-size: 12.5px; color: var(--text-muted); margin: 0 0 6px; }
+.admin-back-link {
+  display: inline-flex; align-items: center; gap: 6px; background: none; border: 0;
+  padding: 0; margin-bottom: 14px; color: var(--text-muted); font-size: 13px; font-weight: 700; cursor: pointer;
+}
+.admin-back-link:hover { color: #9f5276; }
 .admin-schedule-card p.admin-hint { flex-basis: 100%; }
 .admin-field-group { display: flex; flex-direction: column; gap: 6px; }
 .admin-field-group label { font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }

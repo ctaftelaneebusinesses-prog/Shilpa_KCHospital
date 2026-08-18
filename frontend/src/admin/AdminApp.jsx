@@ -7,6 +7,7 @@ import Dashboard from "./Dashboard";
 import Calendar from "./Calendar";
 import DateView from "./DateView";
 import AppointmentsList from "./AppointmentsList";
+import AppointmentDetailPage from "./AppointmentDetailPage";
 import PaymentsHistory from "./PaymentsHistory";
 import Settings from "./Settings";
 
@@ -22,6 +23,7 @@ export default function AdminApp() {
             <Route index element={<Dashboard />} />
             <Route path="calendar" element={<Calendar />} />
             <Route path="appointments" element={<AppointmentsList />} />
+            <Route path="appointments/:id" element={<AppointmentDetailPage />} />
             <Route path="dates/:date" element={<DateView />} />
             <Route path="payments" element={<PaymentsHistory />} />
             <Route path="settings" element={<Settings />} />
