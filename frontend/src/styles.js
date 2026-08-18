@@ -315,8 +315,10 @@ footer { background: #2f2630; color: white; padding: 35px 0; }
 .footer-brand strong { display: block; font-family: "Playfair Display", serif; }
 .footer-brand span { color: #c7a7b6; font-size: 10px; }
 footer p { color: #b7aab1; font-size: 11px; }
+.footer-contact { display: flex; align-items: center; gap: 16px; }
 .footer-contact a { color: #e8c7d6; font-size: 12px; font-weight: 600; text-decoration: none; }
 .footer-contact a:hover { color: white; }
+.footer-instagram { display: flex; align-items: center; }
 .footer-powered-by { display: flex; align-items: center; gap: 6px; }
 .footer-powered-by span { color: #b7aab1; font-size: 11px; }
 .footer-powered-by img { height: 40px; width: auto; }
