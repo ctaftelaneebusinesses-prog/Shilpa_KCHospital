@@ -24,7 +24,6 @@ export default function Footer() {
             href="https://www.instagram.com/dr.shilpa.kchospital?igsh=M2dzOGdzd3g3bjBt"
             target="_blank"
             rel="noreferrer"
-            aria-label="Instagram"
             className="footer-instagram"
           >
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
@@ -32,6 +31,7 @@ export default function Footer() {
               <circle cx="12" cy="12" r="4.2" />
               <circle cx="17.2" cy="6.8" r="1.1" fill="currentColor" stroke="none" />
             </svg>
+            <span>Contact us on Instagram</span>
           </a>
         </div>
 
