@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAdminAppointments } from "../api";
 import { formatDate, formatDateTime, formatTime } from "./format";
@@ -10,6 +10,7 @@ export default function AppointmentsList() {
   const [filters, setFilters] = useState({ date: "", status: "", q: "" });
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const isFirstLoad = useRef(true);
 
   function load() {
     const params = {};
@@ -23,8 +24,13 @@ export default function AppointmentsList() {
   }
 
   useEffect(() => {
-    // Debounced so typing in the search box doesn't fire a full query per
-    // keystroke - only once typing pauses.
+    // The initial page load should never wait on the debounce - only typing
+    // in the search box (or changing a filter afterwards) should be delayed.
+    if (isFirstLoad.current) {
+      isFirstLoad.current = false;
+      load();
+      return;
+    }
     const timer = setTimeout(load, 350);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
