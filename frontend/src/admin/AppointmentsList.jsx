@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAdminAppointments } from "../api";
+import { downloadExcel } from "./exportExcel";
 import { formatDate, formatDateTime, formatTime } from "./format";
 
 const STATUSES = ["payment_pending", "confirmed", "completed", "cancelled", "no_show"];
@@ -36,6 +37,21 @@ export default function AppointmentsList() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
+  function handleDownload() {
+    const rows = appointments.map((appointment) => ({
+      "Patient Name": appointment.patient_name,
+      Phone: appointment.patient_phone,
+      Email: appointment.patient_email || "-",
+      Date: formatDate(appointment.appointment_date),
+      Time: formatTime(appointment.appointment_time),
+      Reason: appointment.reason || "-",
+      Status: appointment.status,
+      "Cancelled Reason": appointment.cancelled_reason || "-",
+      "Booked On": formatDateTime(appointment.created_at),
+    }));
+    downloadExcel(`appointments-${new Date().toISOString().slice(0, 10)}.xlsx`, "Appointments", rows);
+  }
+
   return (
     <>
       <h2>Appointments</h2>
@@ -67,6 +83,15 @@ export default function AppointmentsList() {
           value={filters.q}
           onChange={(event) => setFilters((prev) => ({ ...prev, q: event.target.value }))}
         />
+        <button
+          type="button"
+          className="admin-btn admin-btn-primary"
+          style={{ marginLeft: "auto" }}
+          disabled={appointments.length === 0}
+          onClick={handleDownload}
+        >
+          Download Excel
+        </button>
       </div>
 
       <div className="admin-card">

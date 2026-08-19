@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { confirmAdminPayment, getAdminPayments, rejectAdminPayment } from "../api";
+import { downloadExcel } from "./exportExcel";
 import { formatDate, formatDateTime, formatINR } from "./format";
 
 const STATUSES = ["pending", "pending_verification", "successful", "failed", "refunded"];
@@ -69,6 +70,21 @@ export default function PaymentsHistory() {
     }
   }
 
+  function handleDownload() {
+    const rows = payments.map((payment) => ({
+      "Patient Name": payment.appointments?.patient_name || "-",
+      "Patient Phone": payment.appointments?.patient_phone || "-",
+      "Appointment Date": formatDate(payment.appointments?.appointment_date),
+      "Amount (INR)": payment.amount,
+      Method: payment.payment_method === "manual_upi" ? "Manual UPI" : "Razorpay",
+      Status: payment.status,
+      "Transaction / UPI Ref": payment.razorpay_payment_id || payment.upi_reference || "-",
+      "Order ID": payment.razorpay_order_id || "-",
+      "Paid On": formatDateTime(payment.created_at),
+    }));
+    downloadExcel(`payments-${new Date().toISOString().slice(0, 10)}.xlsx`, "Payments", rows);
+  }
+
   return (
     <>
       <h2>Payment History</h2>
@@ -101,6 +117,15 @@ export default function PaymentsHistory() {
           value={filters.q}
           onChange={(event) => setFilters((prev) => ({ ...prev, q: event.target.value }))}
         />
+        <button
+          type="button"
+          className="admin-btn admin-btn-primary"
+          style={{ marginLeft: "auto" }}
+          disabled={payments.length === 0}
+          onClick={handleDownload}
+        >
+          Download Excel
+        </button>
       </div>
 
       <div className="admin-card">
