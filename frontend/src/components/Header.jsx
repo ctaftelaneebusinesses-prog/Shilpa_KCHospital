@@ -41,8 +41,9 @@ function LanguageDropdown({ language, setLanguage }) {
         onClick={() => setOpen((isOpen) => !isOpen)}
         aria-haspopup="listbox"
         aria-expanded={open}
+        aria-label={`Language: ${current.label}`}
       >
-        <span>{current.label}</span>
+        <span>Languages</span>
         <span className={`language-caret${open ? " open" : ""}`}>▾</span>
       </button>
 
