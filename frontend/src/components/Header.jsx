@@ -18,7 +18,7 @@ const LANGUAGE_OPTIONS = [
   { value: "kn", label: "ಕನ್ನಡ" },
 ];
 
-function LanguageDropdown({ language, setLanguage }) {
+function LanguageDropdown({ language, setLanguage, t }) {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef(null);
   const current = LANGUAGE_OPTIONS.find((option) => option.value === language) ?? LANGUAGE_OPTIONS[0];
@@ -43,7 +43,7 @@ function LanguageDropdown({ language, setLanguage }) {
         aria-expanded={open}
         aria-label={`Language: ${current.label}`}
       >
-        <span>Languages</span>
+        <span>{t("languages")}</span>
         <span className={`language-caret${open ? " open" : ""}`}>▾</span>
       </button>
 
@@ -99,7 +99,7 @@ export default function Header() {
         </nav>
 
         <div className="nav-right">
-          <LanguageDropdown language={language} setLanguage={setLanguage} />
+          <LanguageDropdown language={language} setLanguage={setLanguage} t={t} />
 
           <a href="#appointment" className="nav-btn">
             <span>{t("bookNow")}</span>
