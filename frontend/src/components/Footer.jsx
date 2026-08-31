@@ -37,7 +37,9 @@ export default function Footer() {
 
         <div className="footer-powered-by">
           <span>Powered by</span>
-          <img src={craftlaneeLogo} alt="Craftlanee" />
+          <a href="https://craftlanee.com/" target="_blank" rel="noreferrer">
+            <img src={craftlaneeLogo} alt="Craftlanee" />
+          </a>
         </div>
       </div>
     </footer>
