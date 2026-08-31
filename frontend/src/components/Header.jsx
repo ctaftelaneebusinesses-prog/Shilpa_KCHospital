@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLanguage } from "../LanguageContext";
 import { useScrollHeader } from "../hooks/useScrollHeader";
 import logo from "../assets/logo.png";
@@ -10,6 +10,65 @@ const NAV_LINKS = [
   { href: "#appointment", key: "navAppointment" },
   { href: "#contact", key: "navContact" },
 ];
+
+const LANGUAGE_OPTIONS = [
+  { value: "en", label: "English" },
+  { value: "te", label: "తెలుగు" },
+  { value: "ta", label: "தமிழ்" },
+  { value: "kn", label: "ಕನ್ನಡ" },
+];
+
+function LanguageDropdown({ language, setLanguage }) {
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef(null);
+  const current = LANGUAGE_OPTIONS.find((option) => option.value === language) ?? LANGUAGE_OPTIONS[0];
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div className="language-dropdown" ref={wrapperRef}>
+      <button
+        type="button"
+        className="language-select"
+        onClick={() => setOpen((isOpen) => !isOpen)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <span>{current.label}</span>
+        <span className={`language-caret${open ? " open" : ""}`}>▾</span>
+      </button>
+
+      {open && (
+        <ul className="language-menu" role="listbox">
+          {LANGUAGE_OPTIONS.map((option) => (
+            <li key={option.value}>
+              <button
+                type="button"
+                role="option"
+                aria-selected={option.value === language}
+                className={`language-option${option.value === language ? " active" : ""}`}
+                onClick={() => {
+                  setLanguage(option.value);
+                  setOpen(false);
+                }}
+              >
+                {option.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 export default function Header() {
   const { language, setLanguage, t } = useLanguage();
@@ -39,16 +98,7 @@ export default function Header() {
         </nav>
 
         <div className="nav-right">
-          <select
-            className="language-select"
-            value={language}
-            onChange={(event) => setLanguage(event.target.value)}
-          >
-            <option value="en">English</option>
-            <option value="te">తెలుగు</option>
-            <option value="ta">தமிழ்</option>
-            <option value="kn">ಕನ್ನಡ</option>
-          </select>
+          <LanguageDropdown language={language} setLanguage={setLanguage} />
 
           <a href="#appointment" className="nav-btn">
             <span>{t("bookNow")}</span>

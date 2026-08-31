@@ -44,7 +44,23 @@ button, input, select, textarea { font-family: inherit; }
 .desktop-nav a:hover { color: #9f5276; }
 
 .nav-right { display: flex; align-items: center; gap: 12px; }
-.language-select { border: 1px solid #ead8e0; background: white; padding: 10px 12px; border-radius: 10px; color: #5d4c57; outline: none; }
+.language-dropdown { position: relative; }
+.language-select { display: flex; align-items: center; gap: 8px; border: 1px solid #ead8e0; background: white; padding: 10px 12px; border-radius: 10px; color: #5d4c57; outline: none; cursor: pointer; font-size: 13px; font-weight: 600; }
+.language-select:hover { border-color: #d9b7c8; }
+.language-caret { font-size: 11px; transition: transform 0.2s; color: #9f5276; }
+.language-caret.open { transform: rotate(180deg); }
+.language-menu {
+  position: absolute; top: calc(100% + 8px); right: 0; min-width: 140px;
+  background: white; border: 1px solid #ead8e0; border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(60,40,50,.12); overflow: hidden; z-index: 50;
+  list-style: none; margin: 0; padding: 6px;
+}
+.language-option {
+  display: block; width: 100%; text-align: left; padding: 9px 12px; border-radius: 8px;
+  background: none; border: 0; color: #5d4c57; font-size: 13px; cursor: pointer;
+}
+.language-option:hover { background: #fdf2f7; }
+.language-option.active { background: #9f5276; color: white; font-weight: 700; }
 .nav-btn { padding: 11px 18px; border-radius: 10px; background: #9f5276; color: white; font-size: 13px; font-weight: 700; }
 .menu-btn { display: none; background: none; border: 0; font-size: 25px; cursor: pointer; }
 .mobile-menu { display: none; }
