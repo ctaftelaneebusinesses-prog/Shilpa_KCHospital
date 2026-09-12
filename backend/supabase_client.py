@@ -3,20 +3,55 @@ import time
 import httpcore
 import httpx
 from flask import current_app, g
-from postgrest.exceptions import APIError
+from postgrest._sync import request_builder as _postgrest_request_builder
 from supabase import Client, create_client
 
 # Transient failures seen right after a cold container start: the host's
-# clock hasn't finished NTP sync yet (Supabase rejects the service JWT as
-# "issued in the future") or the connection to Supabase drops mid-request.
-# Both clear up on their own within a second, so a couple of quick retries
-# avoid surfacing a 500 to the patient for something that isn't a real error.
+# clock hasn't finished NTP sync yet, so Supabase briefly rejects the
+# service JWT ("JWT issued at future", code PGRST303), or the connection to
+# Supabase drops mid-request. Both clear up on their own within a second.
+#
+# Patched at this single choke point - the `send_with_retry()` that every
+# postgrest-py query (`.table(...).execute()`, `.rpc(...).execute()`, from
+# every route in every file) already funnels through - instead of wrapping
+# each of the dozens of `.execute()` call sites individually.
 _RETRYABLE_NETWORK_ERRORS = (
     httpx.HTTPError,
     httpcore.RemoteProtocolError,
     httpcore.ConnectError,
     httpcore.ConnectTimeout,
 )
+_RETRYABLE_POSTGREST_CODES = {"PGRST303"}
+
+_original_send_with_retry = _postgrest_request_builder.send_with_retry
+
+
+def _send_with_cold_start_retry(req, attempts: int = 3, delay_seconds: float = 0.4):
+    for attempt in range(attempts):
+        try:
+            resp = _original_send_with_retry(req)
+        except _RETRYABLE_NETWORK_ERRORS:
+            if attempt == attempts - 1:
+                raise
+            time.sleep(delay_seconds)
+            continue
+
+        if resp.is_success or attempt == attempts - 1:
+            return resp
+
+        try:
+            body_code = resp.json().get("code")
+        except ValueError:
+            body_code = None
+        if body_code not in _RETRYABLE_POSTGREST_CODES:
+            return resp
+
+        time.sleep(delay_seconds)
+
+    return resp
+
+
+_postgrest_request_builder.send_with_retry = _send_with_cold_start_retry
 
 
 def get_supabase() -> Client:
@@ -29,18 +64,3 @@ def get_supabase() -> Client:
             current_app.config["SUPABASE_SERVICE_ROLE_KEY"],
         )
     return g.supabase
-
-
-def execute_with_retry(query_builder, attempts: int = 3, delay_seconds: float = 0.4):
-    """Runs `query_builder.execute()`, retrying transient cold-start failures
-    (see module docstring above) up to `attempts` times before giving up."""
-    for attempt in range(attempts):
-        try:
-            return query_builder.execute()
-        except APIError as error:
-            if error.code != "PGRST303" or attempt == attempts - 1:
-                raise
-        except _RETRYABLE_NETWORK_ERRORS:
-            if attempt == attempts - 1:
-                raise
-        time.sleep(delay_seconds)

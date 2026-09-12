@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
-from supabase_client import execute_with_retry, get_supabase
+from supabase_client import get_supabase
 
 # The clinic is in Kuppam, India - always IST, no DST. The server (Railway)
 # runs in UTC, so date.today() drifts a calendar day behind IST for the
@@ -69,22 +69,20 @@ def expire_stale_holds():
     block another patient, without needing a background worker."""
     supabase = get_supabase()
     now_iso = datetime.now(timezone.utc).isoformat()
-    expired = execute_with_retry(
+    expired = (
         supabase.table("appointments")
         .update({"status": "cancelled", "cancelled_reason": "hold_expired"})
         .eq("status", "payment_pending")
         .lt("hold_expires_at", now_iso)
+        .execute()
     )
     # Keep the payments table in sync so the admin dashboard's "pending
     # payments" count doesn't drift from actual payment_pending appointments.
     expired_ids = [row["id"] for row in (expired.data or [])]
     if expired_ids:
-        execute_with_retry(
-            supabase.table("payments")
-            .update({"status": "failed"})
-            .in_("appointment_id", expired_ids)
-            .eq("status", "pending")
-        )
+        supabase.table("payments").update({"status": "failed"}).in_(
+            "appointment_id", expired_ids
+        ).eq("status", "pending").execute()
 
 
 def get_daily_status(date_str: str):
@@ -94,13 +92,13 @@ def get_daily_status(date_str: str):
 
     supabase = get_supabase()
     booked_count = (
-        execute_with_retry(
-            supabase.table("appointments")
-            .select("id", count="exact")
-            .eq("appointment_date", date_str)
-            .in_("status", CAPACITY_STATUSES)
-            .is_("deleted_at", "null")
-        ).count
+        supabase.table("appointments")
+        .select("id", count="exact")
+        .eq("appointment_date", date_str)
+        .in_("status", CAPACITY_STATUSES)
+        .is_("deleted_at", "null")
+        .execute()
+        .count
         or 0
     )
 
@@ -120,13 +118,15 @@ def get_available_slots(date_str: str):
     expire_stale_holds()
 
     supabase = get_supabase()
-    taken_rows = execute_with_retry(
+    taken_rows = (
         supabase.table("appointments")
         .select("appointment_time")
         .eq("appointment_date", date_str)
         .in_("status", CAPACITY_STATUSES)
         .is_("deleted_at", "null")
-    ).data
+        .execute()
+        .data
+    )
     taken = {row["appointment_time"][:5] for row in taken_rows if row.get("appointment_time")}
 
     is_today = date_str == today_ist().isoformat()

@@ -14,7 +14,7 @@ from slots import (
     hold_expiry_timestamp,
     today_ist,
 )
-from supabase_client import execute_with_retry, get_supabase
+from supabase_client import get_supabase
 
 booking_bp = Blueprint("booking", __name__)
 
@@ -89,10 +89,11 @@ def reason_options():
     )
 
     supabase = get_supabase()
-    result = execute_with_retry(
+    result = (
         supabase.table("reason_options")
         .select("id, label, label_te, label_ta, label_kn")
         .order("sort_order")
+        .execute()
     )
     reasons = [
         {
@@ -194,13 +195,14 @@ def hold_slot():
 @booking_bp.get("/appointments/<appointment_id>")
 def get_appointment(appointment_id):
     supabase = get_supabase()
-    result = execute_with_retry(
+    result = (
         supabase.table("appointments")
         .select(
             "id, patient_name, appointment_date, appointment_time, reason, status, hold_expires_at, created_at"
         )
         .eq("id", appointment_id)
         .limit(1)
+        .execute()
     )
     if not result.data:
         return jsonify({"error": "Appointment not found."}), 404
