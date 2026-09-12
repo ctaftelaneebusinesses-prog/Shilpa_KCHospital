@@ -21,7 +21,7 @@ def create_app():
 
     @app.get("/api/health")
     def health():
-        return jsonify({"status": "ok"})
+        return jsonify({"status": "okk"})
 
     return app
 
