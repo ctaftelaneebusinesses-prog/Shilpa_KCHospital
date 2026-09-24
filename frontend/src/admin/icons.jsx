@@ -181,3 +181,14 @@ export function IconEyeOff({ size = 18 }) {
     </svg>
   );
 }
+
+export function IconPatients({ size = 18 }) {
+  return (
+    <svg {...base(size)}>
+      <circle cx="9" cy="7.5" r="3.5" />
+      <path d="M2.5 20.5c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5" />
+      <circle cx="17.5" cy="11" r="2.5" />
+      <path d="M16 20.5h5.5c0-2.4-1.4-4.3-3.5-4.9" />
+    </svg>
+  );
+}

@@ -156,3 +156,24 @@ export async function addAdminReasonOption(label) {
 export async function deleteAdminReasonOption(id) {
   return adminRequest(`/admin/reasons/${id}`, { method: "DELETE" });
 }
+
+export async function getAdminPatients(params = {}) {
+  const query = new URLSearchParams(params).toString();
+  return adminRequest(`/admin/patients${query ? `?${query}` : ""}`);
+}
+
+export async function getAdminPatient(id) {
+  return adminRequest(`/admin/patients/${id}`);
+}
+
+export async function createAdminPatient(payload) {
+  return adminRequest("/admin/patients", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export async function updateAdminPatient(id, payload) {
+  return adminRequest(`/admin/patients/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+}
+
+export async function deleteAdminPatient(id) {
+  return adminRequest(`/admin/patients/${id}`, { method: "DELETE" });
+}

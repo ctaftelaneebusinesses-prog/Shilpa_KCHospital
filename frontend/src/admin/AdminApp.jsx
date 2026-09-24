@@ -9,6 +9,8 @@ import DateView from "./DateView";
 import AppointmentsList from "./AppointmentsList";
 import AppointmentDetailPage from "./AppointmentDetailPage";
 import PaymentsHistory from "./PaymentsHistory";
+import PatientRecords from "./PatientRecords";
+import PatientRecordForm from "./PatientRecordForm";
 import Settings from "./Settings";
 
 injectAdminStyles();
@@ -25,6 +27,9 @@ export default function AdminApp() {
             <Route path="appointments" element={<AppointmentsList />} />
             <Route path="appointments/:id" element={<AppointmentDetailPage />} />
             <Route path="dates/:date" element={<DateView />} />
+            <Route path="patients" element={<PatientRecords />} />
+            <Route path="patients/new" element={<PatientRecordForm />} />
+            <Route path="patients/:id" element={<PatientRecordForm />} />
             <Route path="payments" element={<PaymentsHistory />} />
             <Route path="settings" element={<Settings />} />
           </Route>

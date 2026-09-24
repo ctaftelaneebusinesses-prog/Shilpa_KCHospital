@@ -5,6 +5,7 @@ from admin import admin_bp
 from appointments import appointments_bp
 from booking import booking_bp
 from config import Config
+from patients import patients_bp
 from payments import payments_bp
 
 
@@ -18,6 +19,7 @@ def create_app():
     app.register_blueprint(booking_bp, url_prefix="/api/booking")
     app.register_blueprint(payments_bp, url_prefix="/api/payments")
     app.register_blueprint(admin_bp, url_prefix="/api/admin")
+    app.register_blueprint(patients_bp, url_prefix="/api/admin/patients")
 
     @app.get("/api/health")
     def health():

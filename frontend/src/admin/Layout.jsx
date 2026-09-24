@@ -7,6 +7,7 @@ import {
   IconDashboard,
   IconChevronRight,
   IconLogout,
+  IconPatients,
   IconPayments,
   IconSettings,
 } from "./icons";
@@ -16,6 +17,7 @@ const NAV_ITEMS = [
   { to: "/admin", end: true, label: "Dashboard", icon: IconDashboard, crumb: "Dashboard" },
   { to: "/admin/calendar", label: "Calendar", icon: IconCalendar, crumb: "Calendar" },
   { to: "/admin/appointments", label: "Appointments", icon: IconAppointments, crumb: "Appointments" },
+  { to: "/admin/patients", label: "Patient Details", icon: IconPatients, crumb: "Patient Details" },
   { to: "/admin/payments", label: "Payments", icon: IconPayments, crumb: "Payments" },
   { to: "/admin/settings", label: "Settings", icon: IconSettings, crumb: "Settings" },
 ];

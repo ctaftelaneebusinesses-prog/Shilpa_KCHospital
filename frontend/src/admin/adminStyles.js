@@ -293,6 +293,13 @@ const css = `
 }
 .admin-password-toggle:hover { color: var(--brand); background: var(--brand-tint-05); }
 .admin-error { color: #c0392b; font-size: 12px; margin-bottom: 12px; }
+
+/* ---- Patient Details form ---- */
+.admin-form-heading { font-size: 15px; font-weight: 700; margin: 0 0 16px; }
+.admin-form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 18px; }
+.admin-form-grid .admin-field select, .admin-form-grid .admin-field textarea { width: 100%; }
+.admin-form-grid textarea { resize: vertical; }
+.admin-form-wide { grid-column: 1 / -1; }
 .admin-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; font-size: 13px; }
 .admin-detail-grid dt { color: var(--text-muted); font-size: 11px; text-transform: uppercase; margin-bottom: 2px; }
 .admin-detail-grid dd { font-weight: 600; }
@@ -343,6 +350,7 @@ const css = `
   .admin-breadcrumb { font-size: 12px; }
   .analytics-grid { grid-template-columns: 1fr; }
   .admin-detail-grid { grid-template-columns: 1fr 1fr; }
+  .admin-form-grid { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 560px) {
   .stat-grid { grid-template-columns: 1fr; }
@@ -360,6 +368,7 @@ const css = `
   .admin-toolbar > * { width: 100%; }
 
   .admin-detail-grid { grid-template-columns: 1fr; }
+  .admin-form-grid { grid-template-columns: 1fr; }
 
   .admin-schedule-card { flex-direction: column; align-items: stretch; }
   .admin-schedule-card .admin-field-group, .admin-schedule-card > button { width: 100%; }
