@@ -156,6 +156,7 @@ export async function addAdminReasonOption(label) {
 export async function deleteAdminReasonOption(id) {
   return adminRequest(`/admin/reasons/${id}`, { method: "DELETE" });
 }
+// Patient Details (admin) records
 
 export async function getAdminPatients(params = {}) {
   const query = new URLSearchParams(params).toString();
