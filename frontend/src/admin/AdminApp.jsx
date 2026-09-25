@@ -12,7 +12,7 @@ import PaymentsHistory from "./PaymentsHistory";
 import PatientRecords from "./PatientRecords";
 import PatientRecordForm from "./PatientRecordForm";
 import Settings from "./Settings";
-
+import "./adminStyles.css";
 injectAdminStyles();
 
 export default function AdminApp() {
