@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getAdminPatients } from "../api";
+import { deleteAdminPatient, getAdminPatients } from "../api";
 import { downloadExcel } from "./exportExcel";
 import { formatDate, formatDateTime, formatTime } from "./format";
 import { DELIVERY_TYPES } from "./patientOptions";
@@ -10,6 +10,7 @@ export default function PatientRecords() {
   const [filters, setFilters] = useState({ month: "", delivery_type: "", q: "" });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [deletingId, setDeletingId] = useState(null);
   const navigate = useNavigate();
   const isFirstLoad = useRef(true);
 
@@ -38,6 +39,20 @@ export default function PatientRecords() {
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
+
+  async function handleDelete(patient) {
+    if (!window.confirm(`Delete the record for ${patient.mother_name}? It will be removed from the list.`)) return;
+    setDeletingId(patient.id);
+    setError("");
+    try {
+      await deleteAdminPatient(patient.id);
+      setPatients((prev) => prev.filter((p) => p.id !== patient.id));
+    } catch (err) {
+      setError(err.message || "Failed to delete patient record.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   function handleDownload() {
     const rows = patients.map((p) => ({
@@ -129,6 +144,7 @@ export default function PatientRecords() {
                 <th>Baby</th>
                 <th>Weight</th>
                 <th>District</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -145,11 +161,26 @@ export default function PatientRecords() {
                   <td>{p.baby_gender}</td>
                   <td>{Number(p.baby_weight_kg).toFixed(2)} kg</td>
                   <td>{p.district}</td>
+                  <td onClick={(event) => event.stopPropagation()}>
+                    <div className="admin-toolbar" style={{ margin: 0, flexWrap: "nowrap" }}>
+                      <button type="button" className="admin-btn" onClick={() => navigate(`/admin/patients/${p.id}`)}>
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        className="admin-btn admin-btn-danger"
+                        disabled={deletingId === p.id}
+                        onClick={() => handleDelete(p)}
+                      >
+                        {deletingId === p.id ? "Deleting..." : "Delete"}
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
               {!loading && patients.length === 0 && (
                 <tr>
-                  <td colSpan={9} style={{ color: "var(--text-muted)", textAlign: "center", padding: 24, cursor: "default" }}>
+                  <td colSpan={10} style={{ color: "var(--text-muted)", textAlign: "center", padding: 24, cursor: "default" }}>
                     No patient records yet. Click "+ Add Patient" to add one.
                   </td>
                 </tr>
